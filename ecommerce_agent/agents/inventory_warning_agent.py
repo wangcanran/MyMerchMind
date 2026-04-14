@@ -1,4 +1,4 @@
-"""库存预警 Agent（规则版 baseline）。"""
+"""库存预警 Agent（规则版 baseline，对应 Issue 3.1 动态库存预警逻辑）。"""
 from typing import Dict, List
 
 
@@ -82,4 +82,5 @@ class InventoryWarningAgent:
             "low_stock_alerts": low_stock_alerts,
             "overstock_alerts": overstock_alerts,
             "recommendations": recommendations,
+            "data_source": "mock",
         }

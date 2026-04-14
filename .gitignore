@@ -31,3 +31,7 @@ data/raw/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local demo / smoke artifacts
+demo_report_smoke_*.md
+output/demo_report.md

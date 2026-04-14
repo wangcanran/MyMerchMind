@@ -37,6 +37,10 @@ def build_markdown_report(report: Dict) -> str:
     context = report["context"]
     sales = report["sales_review"]
     inventory = report["inventory_review"]
+    selection = report.get("product_selection", {})
+    slow = report.get("slow_moving", {})
+    replen = report.get("replenishment", {})
+    memory_snap = report.get("memory_snapshot", {})
 
     lines: List[str] = []
     lines.append("# 电商运营 Agent Baseline Demo 报告")
@@ -47,6 +51,27 @@ def build_markdown_report(report: Dict) -> str:
     lines.append(f"- 随机种子：{context['seed']}")
     lines.append(f"- SKU 数量：{context['sku_count']}")
     lines.append(f"- 趋势数量：{context['trend_count']}")
+    lines.append("")
+
+    lines.append("## === PRODUCT SELECTION (M2) ===")
+    if selection.get("trend_picks"):
+        pick = selection["trend_picks"][0]
+        mm = pick.get("merch_mapping", {})
+        lines.append(f"- 主趋势：{pick.get('keyword', 'N/A')}")
+        lines.append(f"- 映射说明：{mm.get('story', '')}")
+        moq = pick.get("moq", {})
+        lines.append(
+            f"- 首单区间：{moq.get('suggested_range_pcs', [])} | 风险：{moq.get('risk_level', '')}"
+        )
+        gaps = pick.get("competitor_gaps") or []
+        if gaps:
+            lines.append("- 竞品缺口：")
+            for g in gaps[:3]:
+                lines.append(
+                    f"  - {g.get('category_key')}：竞品上新 {g.get('competitor_new_skus_30d')} vs 我方 {g.get('ours_new_skus_30d')} | {g.get('gap_note', '')}"
+                )
+    else:
+        lines.append("- 暂无选品输出")
     lines.append("")
 
     lines.append("## === SALES REVIEW (P0) ===")
@@ -86,6 +111,32 @@ def build_markdown_report(report: Dict) -> str:
         lines.append("- 暂无趋势数据")
     lines.append("")
 
+    ch = sales.get("channel_dashboard") or {}
+    lines.append("## === CHANNEL REVIEW (M4.1) ===")
+    if ch.get("channels"):
+        for name, payload in ch["channels"].items():
+            lines.append(
+                f"- {name}：日均 {payload.get('daily_units', 0)} 件，占比 {payload.get('share_pct', 0)}%"
+            )
+        lines.append(
+            f"- 周预估销量：{ch.get('current_week_est_units', 0)}，上周合计：{ch.get('prior_week_total_units', 0)}，周环比约 {ch.get('week_over_week_pct', 0):+.2f}%"
+        )
+        lines.append(
+            f"- 月预估销量：{ch.get('current_month_est_units', 0)}，上月合计：{ch.get('prior_month_total_units', 0)}，月环比约 {ch.get('month_over_month_pct', 0):+.2f}%"
+        )
+    else:
+        lines.append("- 暂无渠道数据")
+    lines.append("")
+
+    rs = sales.get("return_semantics") or {}
+    lines.append("## === RETURN SEMANTICS (M4.2) ===")
+    if rs.get("top_tags"):
+        for tag, cnt in rs["top_tags"]:
+            lines.append(f"- {tag}：{cnt} 次")
+    else:
+        lines.append("- 未命中关键词规则")
+    lines.append("")
+
     lines.append("## === INVENTORY WARNINGS (P1) ===")
     lines.append("### 低库存预警")
     low_lines = _format_inventory_lines(inventory["low_stock_alerts"], mode="low")
@@ -95,6 +146,36 @@ def build_markdown_report(report: Dict) -> str:
     lines.append("### 高库存预警")
     over_lines = _format_inventory_lines(inventory["overstock_alerts"], mode="over")
     lines.extend(over_lines if over_lines else ["- 暂无高库存预警"])
+    lines.append("")
+
+    lines.append("## === SLOW MOVING (M3.2) ===")
+    sms = slow.get("slow_moving_skus") or []
+    if sms:
+        for i, row in enumerate(sms, 1):
+            lines.append(
+                f"{i}. {row['sku_id']} {row['name']} | 库龄 {row['stock_age_days']} 天 | "
+                f"转化 {row['conversion_rate']*100:.2f}% | 策略：{row['strategy']} — {row['reason']}"
+            )
+    else:
+        lines.append("- 暂无滞销命中")
+    lines.append("")
+
+    lines.append("## === REPLENISHMENT EOQ (M3.3) ===")
+    rrows = replen.get("replenishment_rows") or []
+    if rrows:
+        for i, row in enumerate(rrows, 1):
+            eoq = row.get("eoq") or {}
+            lines.append(
+                f"{i}. {row['sku_id']} {row['name']} | 建议订货 {row.get('suggested_order_qty')} 件 "
+                f"(EOQ {eoq.get('eoq_units', 0)})"
+            )
+    else:
+        lines.append("- 暂无低库存可计算 EOQ")
+    lines.append("")
+
+    lines.append("## === MEMORY (M4.3) ===")
+    lines.append(f"- 活跃避雷条数：{memory_snap.get('active_feedback_count', 0)}")
+    lines.append(f"- 选品命中 SKU 数：{memory_snap.get('product_selection_hits', 0)}")
     lines.append("")
 
     lines.append("## === ACTIONS ===")
@@ -116,6 +197,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--replenishment-cycle", type=int, default=7, help="补货周期（天）")
     parser.add_argument("--overstock-days", type=int, default=45, help="高库存阈值（总覆盖天数）")
     parser.add_argument(
+        "--feedback-memory",
+        default="",
+        help="避雷记忆 JSON 路径（默认使用包内 default_feedback_memory.json）",
+    )
+    parser.add_argument(
         "--output",
         default=str(Path(__file__).resolve().parents[1] / "demo_report.md"),
         help="Markdown 报告输出路径",
@@ -126,12 +212,15 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
 
+    fb_path = Path(args.feedback_memory) if args.feedback_memory else None
+
     orchestrator = DemoOrchestrator(
         seed=args.seed,
         top_n=args.top_n,
         as_of=args.as_of,
         replenishment_cycle_days=args.replenishment_cycle,
         overstock_days=args.overstock_days,
+        feedback_memory_path=fb_path,
     )
     report = orchestrator.run()
     markdown = build_markdown_report(report)
