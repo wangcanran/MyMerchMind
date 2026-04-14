@@ -1,9 +1,22 @@
 """滞销品清理 Agent（Issue 3.2 Baseline）。"""
-from typing import Dict, List
+import json
+from typing import Dict, List, Optional
+
+from ..llm import prompts
+from ..llm.client import LLMClientError, OpenAICompatChatClient
+from ..llm.json_util import parse_json_object
 
 
 class SlowMovingAgent:
     """库龄与转化率双条件扫描 + 清理策略。"""
+
+    def __init__(
+        self,
+        llm_client: Optional[OpenAICompatChatClient] = None,
+        use_llm: bool = False,
+    ):
+        self._llm = llm_client
+        self._use_llm = bool(use_llm and llm_client is not None)
 
     def analyze(
         self,
@@ -48,6 +61,32 @@ class SlowMovingAgent:
         else:
             recommendations.append("当前无满足库龄与转化率双阈值的滞销 SKU（演示阈值可调整）。")
 
+        llm_notes: Optional[Dict[str, str]] = None
+        llm_error: Optional[str] = None
+        if self._use_llm and self._llm is not None:
+            try:
+                user_msg = prompts.SLOW_MOVING_USER.format(
+                    payload=json.dumps(
+                        {"candidates": candidates, "thresholds": {"age_days": age_days_threshold, "conversion_rate": conversion_threshold}},
+                        ensure_ascii=False,
+                    ),
+                )
+                raw = self._llm.chat(
+                    [
+                        {"role": "system", "content": prompts.SYSTEM_ZH_BUSINESS},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    temperature=0.0,
+                )
+                parsed = parse_json_object(raw)
+                note = parsed.get("coordination_note")
+                if not isinstance(note, str) or not note.strip():
+                    raise ValueError("缺少 coordination_note")
+                llm_notes = {"coordination_note": note.strip()}
+                data_source = "hybrid"
+            except (LLMClientError, ValueError, TypeError) as e:
+                llm_error = str(e)
+
         return {
             "slow_moving_skus": candidates,
             "recommendations": recommendations,
@@ -56,6 +95,8 @@ class SlowMovingAgent:
                 "conversion_rate": conversion_threshold,
             },
             "data_source": data_source,
+            "llm_notes": llm_notes,
+            "llm_error": llm_error,
         }
 
     def _pick_strategy(self, item: Dict) -> tuple:

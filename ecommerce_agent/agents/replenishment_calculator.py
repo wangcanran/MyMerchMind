@@ -1,6 +1,11 @@
 """智能补货 / EOQ（Issue 3.3 Baseline：可解释公式）。"""
+import json
 import math
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from ..llm import prompts
+from ..llm.client import LLMClientError, OpenAICompatChatClient
+from ..llm.json_util import parse_json_object
 
 
 def compute_eoq(
@@ -38,10 +43,14 @@ class ReplenishmentCalculator:
         ordering_cost: float = 200.0,
         holding_cost_per_unit_per_year: float = 8.0,
         seasonal_factor: float = 1.05,
+        llm_client: Optional[OpenAICompatChatClient] = None,
+        use_llm: bool = False,
     ):
         self.ordering_cost = ordering_cost
         self.holding_cost_per_unit_per_year = holding_cost_per_unit_per_year
         self.seasonal_factor = seasonal_factor
+        self._llm = llm_client
+        self._use_llm = bool(use_llm and llm_client is not None)
 
     def suggest_for_low_stock(
         self,
@@ -79,6 +88,31 @@ class ReplenishmentCalculator:
         else:
             recommendations.append("暂无低库存条目用于 EOQ 试算。")
 
+        data_source = "mock"
+        llm_replenishment_comment: Optional[str] = None
+        llm_error: Optional[str] = None
+        if self._use_llm and self._llm is not None and rows:
+            try:
+                user_msg = prompts.REPLENISHMENT_USER.format(
+                    payload=json.dumps(rows, ensure_ascii=False),
+                )
+                raw = self._llm.chat(
+                    [
+                        {"role": "system", "content": prompts.SYSTEM_ZH_BUSINESS},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    temperature=0.0,
+                )
+                parsed = parse_json_object(raw)
+                bc = parsed.get("business_comment")
+                if not isinstance(bc, str) or not bc.strip():
+                    raise ValueError("缺少 business_comment")
+                llm_replenishment_comment = bc.strip()
+                recommendations.append(f"【LLM】{llm_replenishment_comment}")
+                data_source = "hybrid"
+            except (LLMClientError, ValueError, TypeError) as e:
+                llm_error = str(e)
+
         return {
             "replenishment_rows": rows,
             "params": {
@@ -87,5 +121,7 @@ class ReplenishmentCalculator:
                 "seasonal_factor": self.seasonal_factor,
             },
             "recommendations": recommendations,
-            "data_source": "mock",
+            "data_source": data_source,
+            "llm_replenishment_comment": llm_replenishment_comment,
+            "llm_error": llm_error,
         }

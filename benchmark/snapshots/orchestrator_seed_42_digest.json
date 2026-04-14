@@ -1,0 +1,46 @@
+{
+  "actions_count": 13,
+  "context": {
+    "seed": 42,
+    "sku_count": 20,
+    "top_n": 5,
+    "trend_count": 5
+  },
+  "inventory_low_stock_ids": [
+    "SKU1018",
+    "SKU1010",
+    "SKU1016"
+  ],
+  "inventory_overstock_ids": [
+    "SKU1007",
+    "SKU1015"
+  ],
+  "memory_snapshot": {
+    "active_feedback_count": 2,
+    "product_selection_hits": 5
+  },
+  "product_selection_trend_keyword": "美拉德风格",
+  "replenishment_sku_ids": [
+    "SKU1018",
+    "SKU1010",
+    "SKU1016"
+  ],
+  "sales_high_return_ids": [
+    "SKU1012",
+    "SKU1009",
+    "SKU1011",
+    "SKU1010",
+    "SKU1018"
+  ],
+  "sales_top_sku_ids": [
+    "SKU1013",
+    "SKU1014",
+    "SKU1017",
+    "SKU1001",
+    "SKU1006"
+  ],
+  "slow_moving_ids": [
+    "SKU1013",
+    "SKU1016"
+  ]
+}

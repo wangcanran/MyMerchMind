@@ -63,3 +63,10 @@ class MockERPData:
                 "prior_month_total_units": month_units,
             }
         return skus
+
+
+class StaticERPData:
+    """固定 SKU 表，供 benchmark 注入；字段与 `MockERPData.skus` 条目一致。"""
+
+    def __init__(self, skus: Dict[str, Dict]):
+        self.skus = {k: dict(v) for k, v in skus.items()}

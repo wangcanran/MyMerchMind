@@ -1,0 +1,246 @@
+.app-header {
+  margin-bottom: 1.25rem;
+}
+
+.app-title {
+  margin-bottom: 0.25rem;
+}
+
+.app-sub {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.param-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+.param-field label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.param-field input {
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-card);
+  font: inherit;
+  color: var(--text);
+}
+
+.param-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn {
+  cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 500;
+}
+
+.btn-primary {
+  background: var(--color-structure);
+  color: #fff;
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.err {
+  color: var(--color-urgent);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.card {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.card--actions {
+  background: linear-gradient(
+    135deg,
+    var(--color-actions),
+    var(--surface-card) 40%
+  );
+  border-color: rgba(13, 148, 136, 0.25);
+}
+
+.card--selection {
+  background: var(--surface-warm);
+}
+
+.card--structure {
+  border-color: rgba(79, 70, 229, 0.35);
+  background: var(--surface-cool);
+}
+
+.card-title {
+  margin-bottom: 0.75rem;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.kpi {
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: var(--surface-bg);
+  border: 1px solid var(--border);
+}
+
+.kpi-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.kpi-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-growth);
+}
+
+.kpi-value--risk {
+  color: var(--color-risk);
+}
+
+.actions-list {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.actions-list li {
+  margin-bottom: 0.35rem;
+  padding-left: 0.15rem;
+}
+
+.data-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table th {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.row-urgent td {
+  color: var(--color-urgent);
+}
+
+.row-risk td {
+  color: var(--color-risk);
+}
+
+.channel-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.channel-row {
+  display: grid;
+  grid-template-columns: 72px 1fr 48px;
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.channel-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.channel-bar-fill {
+  height: 100%;
+  background: var(--color-structure);
+  border-radius: 4px;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.tag {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  background: var(--color-structure-bg);
+  color: var(--color-structure);
+}
+
+.md-preview {
+  margin-top: 0.75rem;
+  max-height: 280px;
+  overflow: auto;
+  padding: 0.75rem;
+  background: var(--surface-bg);
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  text-align: left;
+}
+
+.empty-hint {
+  color: var(--text-subtle);
+  font-size: 0.9rem;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}

@@ -35,3 +35,11 @@ Thumbs.db
 # Local demo / smoke artifacts
 demo_report_smoke_*.md
 output/demo_report.md
+
+# Web dashboard (Vite)
+web/node_modules/
+web/dist/
+
+# Benchmark 仿真输出（可重复生成）
+benchmark/results/*.json
+!benchmark/results/.gitkeep

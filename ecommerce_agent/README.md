@@ -75,6 +75,25 @@ print(tools.query_growing_trends(3))
 python -m ecommerce_agent.main --demo --seed 42 --top-n 5
 ```
 
+### LLM 补充（可选）
+
+使用 OpenAI 兼容的 `POST /chat/completions` 接口。默认**不**调用 LLM，以保证报告可复现。
+
+环境变量（常用）：
+
+- `LLM_API_KEY` 或 `OPENAI_API_KEY`：密钥
+- `LLM_BASE_URL`：默认 `https://api.openai.com/v1`
+- `LLM_CHAT_PATH`：默认 `/chat/completions`
+- `LLM_MODEL`：默认 `gpt-4o-mini`
+- `LLM_TIMEOUT_S`：超时秒数，默认 `60`
+
+启用示例：
+
+```bash
+export LLM_API_KEY=your_key
+python -m ecommerce_agent.main --demo --llm --llm-model gpt-4o-mini
+```
+
 默认会同时：
 - 在终端打印结构化复盘结果
 - 在项目根目录生成 `demo_report.md`

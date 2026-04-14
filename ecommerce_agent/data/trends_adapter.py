@@ -1,13 +1,17 @@
 """趋势数据适配层"""
 from typing import Dict, List, Optional
-from .mock_trends import MockTrendsData
+
+from .mock_trends import MockTrendsData, StaticTrendsData
 
 
 class TrendsAdapter:
     """统一的趋势数据访问接口"""
 
-    def __init__(self, seed: Optional[int] = None):
-        self.data_source = MockTrendsData(seed=seed)
+    def __init__(self, seed: Optional[int] = None, trends: Optional[List[Dict]] = None):
+        if trends is not None:
+            self.data_source = StaticTrendsData(trends)
+        else:
+            self.data_source = MockTrendsData(seed=seed)
 
     def get_top_trends(self, limit: int = 10) -> List[Dict]:
         """获取热度最高的趋势"""

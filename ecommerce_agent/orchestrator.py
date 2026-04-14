@@ -10,6 +10,7 @@ from .agents.slow_moving_agent import SlowMovingAgent
 from .data.erp_adapter import ERPAdapter
 from .data.trends_adapter import TrendsAdapter
 from .memory.feedback_store import FeedbackMemoryStore
+from .llm import OpenAICompatChatClient, load_llm_config
 
 
 class DemoOrchestrator:
@@ -23,6 +24,9 @@ class DemoOrchestrator:
         replenishment_cycle_days: int = 7,
         overstock_days: int = 45,
         feedback_memory_path: Optional[Path] = None,
+        erp_adapter: Optional[ERPAdapter] = None,
+        trends_adapter: Optional[TrendsAdapter] = None,
+        use_llm: bool = False,
     ):
         self.seed = seed
         self.top_n = top_n
@@ -30,14 +34,30 @@ class DemoOrchestrator:
         self.replenishment_cycle_days = replenishment_cycle_days
         self.overstock_days = overstock_days
 
-        self.erp_adapter = ERPAdapter(seed=seed)
-        self.trends_adapter = TrendsAdapter(seed=seed)
+        self.erp_adapter = erp_adapter if erp_adapter is not None else ERPAdapter(seed=seed)
+        self.trends_adapter = trends_adapter if trends_adapter is not None else TrendsAdapter(seed=seed)
         self.memory = FeedbackMemoryStore(path=feedback_memory_path)
-        self.sales_agent = SalesReviewAgent()
-        self.inventory_agent = InventoryWarningAgent()
-        self.selection_agent = ProductSelectionAgent()
-        self.slow_moving_agent = SlowMovingAgent()
-        self.replenishment_calc = ReplenishmentCalculator()
+
+        llm_cfg = load_llm_config()
+        llm_client: Optional[OpenAICompatChatClient] = None
+        self.llm_notice: Optional[str] = None
+        self.llm_enabled = False
+        if use_llm:
+            if llm_cfg.is_configured():
+                llm_client = OpenAICompatChatClient(llm_cfg)
+            else:
+                self.llm_notice = "已请求 --llm，但未配置 LLM_API_KEY / OPENAI_API_KEY，已回退为规则模式。"
+        effective_llm = use_llm and llm_client is not None
+        self.llm_enabled = bool(effective_llm)
+
+        self.sales_agent = SalesReviewAgent(llm_client=llm_client, use_llm=effective_llm)
+        self.inventory_agent = InventoryWarningAgent(llm_client=llm_client, use_llm=effective_llm)
+        self.selection_agent = ProductSelectionAgent(llm_client=llm_client, use_llm=effective_llm)
+        self.slow_moving_agent = SlowMovingAgent(llm_client=llm_client, use_llm=effective_llm)
+        self.replenishment_calc = ReplenishmentCalculator(
+            llm_client=llm_client,
+            use_llm=effective_llm,
+        )
 
     def run(self) -> Dict:
         sku_metrics = self.erp_adapter.get_all_skus()
@@ -96,6 +116,8 @@ class DemoOrchestrator:
                 "sku_count": len(sku_metrics),
                 "trend_count": len(top_trends),
                 "top_n": self.top_n,
+                "llm_enabled": self.llm_enabled,
+                "llm_notice": self.llm_notice,
             },
             "product_selection": product_selection,
             "sales_review": sales_review,

@@ -1,9 +1,22 @@
 """库存预警 Agent（规则版 baseline，对应 Issue 3.1 动态库存预警逻辑）。"""
-from typing import Dict, List
+import json
+from typing import Dict, List, Optional
+
+from ..llm import prompts
+from ..llm.client import LLMClientError, OpenAICompatChatClient
+from ..llm.json_util import parse_json_object
 
 
 class InventoryWarningAgent:
     """基于规则生成库存预警。"""
+
+    def __init__(
+        self,
+        llm_client: Optional[OpenAICompatChatClient] = None,
+        use_llm: bool = False,
+    ):
+        self._llm = llm_client
+        self._use_llm = bool(use_llm and llm_client is not None)
 
     def analyze(
         self,
@@ -78,9 +91,41 @@ class InventoryWarningAgent:
         if not recommendations:
             recommendations.append("当前库存结构健康，无需额外干预。")
 
+        data_source = "mock"
+        llm_notes: Optional[Dict[str, str]] = None
+        llm_error: Optional[str] = None
+        if self._use_llm and self._llm is not None:
+            try:
+                payload = {
+                    "low_stock_alerts": low_stock_alerts,
+                    "overstock_alerts": overstock_alerts,
+                    "replenishment_cycle_days": replenishment_cycle_days,
+                    "overstock_days": overstock_days,
+                }
+                user_msg = prompts.INVENTORY_USER.format(
+                    payload=json.dumps(payload, ensure_ascii=False),
+                )
+                raw = self._llm.chat(
+                    [
+                        {"role": "system", "content": prompts.SYSTEM_ZH_BUSINESS},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    temperature=0.0,
+                )
+                parsed = parse_json_object(raw)
+                note = parsed.get("priorities_note")
+                if not isinstance(note, str) or not note.strip():
+                    raise ValueError("缺少 priorities_note")
+                llm_notes = {"priorities_note": note.strip()}
+                data_source = "hybrid"
+            except (LLMClientError, ValueError, TypeError) as e:
+                llm_error = str(e)
+
         return {
             "low_stock_alerts": low_stock_alerts,
             "overstock_alerts": overstock_alerts,
             "recommendations": recommendations,
-            "data_source": "mock",
+            "data_source": data_source,
+            "llm_notes": llm_notes,
+            "llm_error": llm_error,
         }

@@ -2,15 +2,18 @@
 from typing import Dict, List, Optional
 
 from .mock_competitors import list_competitor_rows
-from .mock_erp import MockERPData
+from .mock_erp import MockERPData, StaticERPData
 from .mock_product_tags import ProductTagStore
 
 
 class ERPAdapter:
     """统一的 ERP 数据访问接口"""
 
-    def __init__(self, seed: Optional[int] = None):
-        self.data_source = MockERPData(seed=seed)
+    def __init__(self, seed: Optional[int] = None, sku_table: Optional[Dict[str, Dict]] = None):
+        if sku_table is not None:
+            self.data_source = StaticERPData(sku_table)
+        else:
+            self.data_source = MockERPData(seed=seed)
         sku_ids = sorted(self.data_source.skus.keys())
         self._tag_store = ProductTagStore(seed=seed, sku_ids=sku_ids)
 

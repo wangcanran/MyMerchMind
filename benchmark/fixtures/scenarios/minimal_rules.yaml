@@ -1,0 +1,74 @@
+# 人工可验算：低库存 / 高库存 / 滞销 / 高退货 各一条
+id: minimal_rules
+orchestrator:
+  seed: 42
+  top_n: 10
+  replenishment_cycle_days: 7
+  overstock_days: 45
+
+erp_skus:
+  SKU1001:
+    name: 黑色连衣裙
+    daily_sales: 10
+    stock: 30
+    in_transit: 0
+    return_rate: 0.05
+    channel_sales: { live: 5, private: 3, shelf: 2 }
+    conversion_rate: 0.02
+    stock_age_days: 20
+    review_snippets: ["质量很好"]
+    prior_week_total_units: 700
+    prior_month_total_units: 3000
+  SKU1002:
+    name: 白色衬衫
+    daily_sales: 5
+    stock: 400
+    in_transit: 0
+    return_rate: 0.04
+    channel_sales: { live: 2, private: 2, shelf: 1 }
+    conversion_rate: 0.02
+    stock_age_days: 15
+    review_snippets: ["质量很好"]
+    prior_week_total_units: 175
+    prior_month_total_units: 750
+  SKU1003:
+    name: 米色T恤
+    daily_sales: 8
+    stock: 200
+    in_transit: 0
+    return_rate: 0.03
+    channel_sales: { live: 4, private: 2, shelf: 2 }
+    conversion_rate: 0.008
+    stock_age_days: 65
+    review_snippets: ["质量很好"]
+    prior_week_total_units: 560
+    prior_month_total_units: 2400
+  SKU1004:
+    name: 咖啡色外套
+    daily_sales: 12
+    stock: 300
+    in_transit: 0
+    return_rate: 0.12
+    channel_sales: { live: 6, private: 3, shelf: 3 }
+    conversion_rate: 0.025
+    stock_age_days: 25
+    review_snippets: ["颜色与图片有色差，实物偏暗"]
+    prior_week_total_units: 840
+    prior_month_total_units: 3600
+
+trends:
+  - keyword: "美拉德风格测试"
+    platform: "小红书"
+    heat_score: 20000
+    growth_rate: 0.3
+    timestamp: "2026-01-01T00:00:00"
+
+expect:
+  low_stock_must_include:
+    - SKU1001
+  overstock_must_include:
+    - SKU1002
+  slow_moving_must_include:
+    - SKU1003
+  high_return_must_include:
+    - SKU1004

@@ -32,3 +32,10 @@ class MockTrendsData:
             })
 
         return sorted(trends, key=lambda x: x["heat_score"], reverse=True)
+
+
+class StaticTrendsData:
+    """固定趋势列表，供 benchmark 注入；元素字段与 `MockTrendsData.trends` 一致。"""
+
+    def __init__(self, trends: List[Dict]):
+        self.trends = [dict(t) for t in trends]

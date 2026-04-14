@@ -1,8 +1,12 @@
 """选品 Agent（M2 Baseline：规则映射 + 竞品 Gap + 首单 MOQ）。"""
-from typing import Dict, List, Tuple
+import json
+from typing import Dict, List, Optional, Tuple
 
-from ..memory.feedback_store import FeedbackMemoryStore
 from ..data.mock_competitors import get_rows_for_categories
+from ..llm.client import LLMClientError, OpenAICompatChatClient
+from ..llm.json_util import parse_json_object
+from ..llm import prompts
+from ..memory.feedback_store import FeedbackMemoryStore
 
 
 def map_trend_to_merch_rules(keyword: str) -> Dict:
@@ -65,6 +69,14 @@ def _moq_for_risk(heat_score: float, growth_rate: float) -> Tuple[str, int, int]
 
 class ProductSelectionAgent:
     """基于规则与标签匹配的选品建议。"""
+
+    def __init__(
+        self,
+        llm_client: Optional[OpenAICompatChatClient] = None,
+        use_llm: bool = False,
+    ):
+        self._llm = llm_client
+        self._use_llm = bool(use_llm and llm_client is not None)
 
     def analyze(
         self,
@@ -142,10 +154,52 @@ class ProductSelectionAgent:
                 f"避雷记忆命中 {len(memory_hits_summary)} 个 SKU，选品时需标注风险或拦截相似材质/风格。"
             )
 
+        llm_error: Optional[str] = None
+        if self._use_llm and self._llm is not None:
+            try:
+                gaps_bits: List[str] = []
+                for g in (gap_rows or [])[:3]:
+                    gaps_bits.append(
+                        f"{g.get('category_key', '')}: {g.get('gap_note', '')}"
+                    )
+                user_msg = prompts.PRODUCT_SELECTION_USER.format(
+                    keyword=primary.get("keyword", ""),
+                    merch_json=json.dumps(merch, ensure_ascii=False),
+                    gaps_summary="; ".join(gaps_bits) if gaps_bits else "无",
+                )
+                raw = self._llm.chat(
+                    [
+                        {"role": "system", "content": prompts.SYSTEM_ZH_BUSINESS},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    temperature=0.0,
+                )
+                extra = parse_json_object(raw)
+                mm = trend_picks[0].get("merch_mapping") or {}
+                if isinstance(extra.get("story"), str) and extra["story"].strip():
+                    mm["story"] = extra["story"].strip()
+                for key in ("color_focus", "material_focus"):
+                    add = extra.get(key)
+                    if isinstance(add, list):
+                        merged = list(mm.get(key, []))
+                        for x in add:
+                            if isinstance(x, str) and x and x not in merged:
+                                merged.append(x)
+                        mm[key] = merged
+                trend_picks[0]["merch_mapping"] = mm
+                trend_picks[0]["data_source"] = "hybrid"
+                recommendations[0] = (
+                    f"围绕「{primary.get('keyword', '当季')}」：{mm.get('story', '')}"
+                )
+                data_source = "hybrid"
+            except (LLMClientError, ValueError, KeyError, TypeError) as e:
+                llm_error = str(e)
+
         return {
             "trend_picks": trend_picks,
             "tag_overlap_sample": tag_overlap,
             "memory_hits": memory_hits_summary,
             "recommendations": recommendations,
             "data_source": data_source,
+            "llm_error": llm_error,
         }

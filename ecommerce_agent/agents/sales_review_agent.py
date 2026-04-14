@@ -1,5 +1,10 @@
 """销量复盘 Agent（规则版 baseline + 渠道复盘 + 退货语义）。"""
-from typing import Dict, List
+import json
+from typing import Dict, List, Optional
+
+from ..llm import prompts
+from ..llm.client import LLMClientError, OpenAICompatChatClient
+from ..llm.json_util import parse_json_object
 
 
 _RETURN_KEYWORDS = [
@@ -16,6 +21,14 @@ _RETURN_KEYWORDS = [
 
 class SalesReviewAgent:
     """基于规则生成销量复盘结论。"""
+
+    def __init__(
+        self,
+        llm_client: Optional[OpenAICompatChatClient] = None,
+        use_llm: bool = False,
+    ):
+        self._llm = llm_client
+        self._use_llm = bool(use_llm and llm_client is not None)
 
     def analyze(
         self,
@@ -40,6 +53,8 @@ class SalesReviewAgent:
                 "return_semantics": {},
                 "recommendations": ["暂无可分析数据"],
                 "data_source": data_source,
+                "llm_executive_brief": None,
+                "llm_error": None,
             }
 
         ranked_sales = sorted(
@@ -105,6 +120,46 @@ class SalesReviewAgent:
             tag, cnt = return_semantics["top_tags"][0]
             recommendations.append(f"退货语义高频：{tag}（{cnt} 次），建议联动选品与质检。")
 
+        llm_executive_brief: Optional[Dict] = None
+        llm_error: Optional[str] = None
+        if self._use_llm and self._llm is not None:
+            try:
+                brief_payload = {
+                    "summary": {
+                        "total_daily_sales": total_daily_sales,
+                        "avg_return_rate_pct": round(avg_return_rate * 100, 2),
+                        "top_trend": top_trends[0]["keyword"] if top_trends else "暂无",
+                    },
+                    "top_skus": [self._to_view(item) for item in ranked_sales[:top_n]],
+                    "high_return_skus": [self._to_view(item) for item in high_return[:3]],
+                    "channel_dashboard": channel_dashboard,
+                    "return_semantics": return_semantics,
+                }
+                user_msg = prompts.SALES_REVIEW_USER.format(
+                    payload=json.dumps(brief_payload, ensure_ascii=False),
+                )
+                raw = self._llm.chat(
+                    [
+                        {"role": "system", "content": prompts.SYSTEM_ZH_BUSINESS},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    temperature=0.0,
+                )
+                parsed = parse_json_object(raw)
+                es = parsed.get("executive_summary")
+                bullets = parsed.get("action_bullets")
+                if not isinstance(es, str) or not isinstance(bullets, list):
+                    raise ValueError("LLM 返回结构无效")
+                llm_executive_brief = {
+                    "executive_summary": es.strip(),
+                    "action_bullets": [str(b).strip() for b in bullets if str(b).strip()],
+                }
+                for b in llm_executive_brief["action_bullets"]:
+                    recommendations.append(f"【LLM】{b}")
+                data_source = "hybrid"
+            except (LLMClientError, ValueError, TypeError) as e:
+                llm_error = str(e)
+
         return {
             "summary": {
                 "total_daily_sales": total_daily_sales,
@@ -119,6 +174,8 @@ class SalesReviewAgent:
             "return_semantics": return_semantics,
             "recommendations": recommendations,
             "data_source": data_source,
+            "llm_executive_brief": llm_executive_brief,
+            "llm_error": llm_error,
         }
 
     def _build_channel_dashboard(self, sku_metrics: List[Dict]) -> Dict:
