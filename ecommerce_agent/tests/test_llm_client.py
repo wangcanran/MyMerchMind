@@ -24,6 +24,7 @@ def _cfg() -> LLMConfig:
         api_key="test-key",
         model="dummy-model",
         timeout_s=10.0,
+        max_output_tokens=4096,
     )
 
 

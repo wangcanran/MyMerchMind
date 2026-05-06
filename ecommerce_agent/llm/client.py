@@ -44,6 +44,8 @@ class OpenAICompatChatClient:
             "model": model or self._config.model,
             "messages": messages,
             "temperature": temperature,
+            # 显式限制输出上限：多数兼容网关默认过大时会触发「max_tokens>4096 须 stream」类错误
+            "max_tokens": self._config.max_output_tokens,
         }
         if response_format is not None:
             payload["response_format"] = response_format
@@ -59,8 +61,19 @@ class OpenAICompatChatClient:
                 client_kw["transport"] = self._transport
             with httpx.Client(**client_kw) as client:
                 resp = client.post(url, headers=headers, json=payload)
-                resp.raise_for_status()
+                try:
+                    resp.raise_for_status()
+                except httpx.HTTPStatusError as e:
+                    body = (resp.text or "").strip()
+                    if len(body) > 800:
+                        body = body[:800] + "…"
+                    detail = f"HTTP {resp.status_code}"
+                    if body:
+                        detail += f" | 响应体: {body}"
+                    raise LLMClientError(f"HTTP 请求失败: {e}; {detail}") from e
                 data = resp.json()
+        except LLMClientError:
+            raise
         except httpx.HTTPError as e:
             raise LLMClientError(f"HTTP 请求失败: {e}") from e
         except ValueError as e:

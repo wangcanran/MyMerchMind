@@ -1,0 +1,22 @@
+{
+  "tags": {
+    "SKU2001": {
+      "collar": "方领",
+      "material": "涤纶",
+      "style": "美拉德",
+      "color": "米色"
+    },
+    "SKU2002": {
+      "collar": "翻领",
+      "material": "羊毛混纺",
+      "style": "静奢",
+      "color": "咖啡色"
+    },
+    "SKU2003": {
+      "collar": "圆领",
+      "material": "棉",
+      "style": "多巴胺",
+      "color": "白色"
+    }
+  }
+}

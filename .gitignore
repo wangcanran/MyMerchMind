@@ -43,3 +43,14 @@ web/dist/
 # Benchmark 仿真输出（可重复生成）
 benchmark/results/*.json
 !benchmark/results/.gitkeep
+
+# LightRAG 本地图谱数据（体积大，本地构建）
+kg_storage_v2/
+ecommerce_agent/kg_storage_v2/
+
+# 临时 baseline 对照脚本
+temp_baseline_ps.py
+temp_ps_baseline.py
+
+# 误建的嵌套目录（勿提交）
+ecommerce_agent/ecommerce_agent/

@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from .agents.inventory_warning_agent import InventoryWarningAgent
-from .agents.product_selection_agent import ProductSelectionAgent
 from .agents.replenishment_calculator import ReplenishmentCalculator
 from .agents.sales_review_agent import SalesReviewAgent
 from .agents.slow_moving_agent import SlowMovingAgent
@@ -52,7 +51,6 @@ class DemoOrchestrator:
 
         self.sales_agent = SalesReviewAgent(llm_client=llm_client, use_llm=effective_llm)
         self.inventory_agent = InventoryWarningAgent(llm_client=llm_client, use_llm=effective_llm)
-        self.selection_agent = ProductSelectionAgent(llm_client=llm_client, use_llm=effective_llm)
         self.slow_moving_agent = SlowMovingAgent(llm_client=llm_client, use_llm=effective_llm)
         self.replenishment_calc = ReplenishmentCalculator(
             llm_client=llm_client,
@@ -63,18 +61,21 @@ class DemoOrchestrator:
         sku_metrics = self.erp_adapter.get_all_skus()
         top_trends = self.trends_adapter.get_top_trends(limit=max(self.top_n, 5))
         growing_trends = self.trends_adapter.get_growing_trends(limit=max(self.top_n, 5))
-        all_tags = self.erp_adapter.get_all_sku_tags()
-        competitor_rows = self.erp_adapter.list_competitor_benchmarks()
 
-        product_selection = self.selection_agent.analyze(
-            top_trends=top_trends,
-            growing_trends=growing_trends,
-            sku_metrics=sku_metrics,
-            all_sku_tags=all_tags,
-            competitor_rows=competitor_rows,
-            memory=self.memory,
-            top_n=self.top_n,
-        )
+        product_selection = {
+            "skipped": True,
+            "message": (
+                "选品 Agent 已与 Baseline 趋势 Demo 解耦。请用店铺风格、季节、地点、价位等构造 criteria，"
+                "调用 ProductSelectionAgent.analyze_async / analyze_sync；与历史销售、竞品、定价、库存的对比"
+                "在编排层串联现有 ERP / 竞品 / 补货模块。"
+            ),
+            "recommendations": [],
+            "trend_picks": [],
+            "tag_overlap_sample": [],
+            "memory_hits": [],
+            "data_source": "criteria_pipeline",
+            "llm_error": None,
+        }
 
         sales_review = self.sales_agent.analyze(
             sku_metrics=sku_metrics,

@@ -1,0 +1,3 @@
+sku_id,supplier_id,moq,lead_time_days,unit_cost_yuan
+SKU3001,嘉兴厂A,100,14,52.5
+SKU3002,广州厂B,80,21,88.0

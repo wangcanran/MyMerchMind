@@ -58,6 +58,8 @@ def build_markdown_report(report: Dict) -> str:
     lines.append("")
 
     lines.append("## === PRODUCT SELECTION (M2) ===")
+    if selection.get("skipped") and selection.get("message"):
+        lines.append(f"- {selection['message']}")
     if selection.get("trend_picks"):
         pick = selection["trend_picks"][0]
         mm = pick.get("merch_mapping", {})
@@ -74,7 +76,7 @@ def build_markdown_report(report: Dict) -> str:
                 lines.append(
                     f"  - {g.get('category_key')}：竞品上新 {g.get('competitor_new_skus_30d')} vs 我方 {g.get('ours_new_skus_30d')} | {g.get('gap_note', '')}"
                 )
-    else:
+    elif not selection.get("skipped"):
         lines.append("- 暂无选品输出")
     if selection.get("llm_error"):
         lines.append(f"- LLM 补充失败：{selection['llm_error']}")
