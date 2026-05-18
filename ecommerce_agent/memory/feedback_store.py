@@ -15,20 +15,14 @@ class FeedbackMemoryStore:
     def __init__(self, path: Optional[Path] = None):
         base = Path(__file__).resolve().parent
         self._path = path or (base / "default_feedback_memory.json")
-        self._data: Dict[str, Any] = {"schema_version": 2, "items": [], "category_experiences": []}
+        self._data: Dict[str, Any] = {"items": []}
         self._load()
 
     def _load(self) -> None:
         if self._path.exists():
             self._data = json.loads(self._path.read_text(encoding="utf-8"))
         else:
-            self._data = {"schema_version": 2, "items": [], "category_experiences": []}
-        if not isinstance(self._data, dict):
-            self._data = {"schema_version": 2, "items": [], "category_experiences": []}
-            return
-        self._data.setdefault("schema_version", 2)
-        self._data.setdefault("items", [])
-        self._data.setdefault("category_experiences", [])
+            self._data = {"items": []}
 
     def save(self) -> None:
         self._path.write_text(json.dumps(self._data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -109,42 +103,4 @@ class FeedbackMemoryStore:
             "expires_at": expires_at,
         }
         self._data.setdefault("items", []).append(item)
-        return dict(item)
-
-    def list_active_category_experiences(self) -> List[Dict[str, Any]]:
-        items = self._data.get("category_experiences", [])
-        today = date.today()
-        out: List[Dict[str, Any]] = []
-        for it in items:
-            if not isinstance(it, dict):
-                continue
-            if it.get("status") != "active":
-                continue
-            exp = it.get("expires_at")
-            if exp:
-                try:
-                    if date.fromisoformat(exp) < today:
-                        continue
-                except ValueError:
-                    continue
-            out.append(dict(it))
-        return out
-
-    def append_category_experience(self, candidate: Dict[str, Any], *, expires_at: Optional[str] = None) -> Dict[str, Any]:
-        if not isinstance(candidate, dict):
-            raise TypeError("candidate must be a dict")
-        exp_id = str(candidate.get("experience_id", "")).strip()
-        if not exp_id:
-            exp_id = f"exp-{len(self._data.get('category_experiences', [])) + 1}"
-        existing = self._data.get("category_experiences", [])
-        if isinstance(existing, list):
-            for it in existing:
-                if isinstance(it, dict) and str(it.get("experience_id", "")).strip() == exp_id:
-                    return dict(it)
-        item = dict(candidate)
-        item["experience_id"] = exp_id
-        item.setdefault("status", "active")
-        item.setdefault("created_at", _today_iso())
-        item.setdefault("expires_at", expires_at)
-        self._data.setdefault("category_experiences", []).append(item)
         return dict(item)

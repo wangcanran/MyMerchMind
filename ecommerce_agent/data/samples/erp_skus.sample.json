@@ -1,0 +1,43 @@
+{
+  "skus": {
+    "SKU2001": {
+      "name": "米色连衣裙",
+      "daily_sales": 18,
+      "stock": 120,
+      "in_transit": 40,
+      "return_rate": 0.06,
+      "channel_sales": { "live": 8, "private": 5, "shelf": 5 },
+      "conversion_rate": 0.018,
+      "stock_age_days": 25,
+      "review_snippets": ["版型好", "面料舒适"],
+      "prior_week_total_units": 120,
+      "prior_month_total_units": 520
+    },
+    "SKU2002": {
+      "name": "咖啡色外套",
+      "daily_sales": 9,
+      "stock": 300,
+      "in_transit": 0,
+      "return_rate": 0.11,
+      "channel_sales": { "live": 4, "private": 3, "shelf": 2 },
+      "conversion_rate": 0.009,
+      "stock_age_days": 72,
+      "review_snippets": ["偏厚"],
+      "prior_week_total_units": 58,
+      "prior_month_total_units": 250
+    },
+    "SKU2003": {
+      "name": "白色T恤",
+      "daily_sales": 35,
+      "stock": 45,
+      "in_transit": 100,
+      "return_rate": 0.04,
+      "channel_sales": { "live": 20, "private": 10, "shelf": 5 },
+      "conversion_rate": 0.022,
+      "stock_age_days": 14,
+      "review_snippets": [],
+      "prior_week_total_units": 230,
+      "prior_month_total_units": 980
+    }
+  }
+}

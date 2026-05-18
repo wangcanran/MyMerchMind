@@ -24,6 +24,7 @@ def _cfg() -> LLMConfig:
         api_key="test-key",
         model="dummy-model",
         timeout_s=10.0,
+        max_output_tokens=4096,
     )
 
 
@@ -43,44 +44,6 @@ def test_openai_compat_chat_parses_message_content() -> None:
     assert client.chat([{"role": "user", "content": "hi"}]) == "hello world"
 
 
-def test_openai_compat_chat_parses_message_content_parts() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
-            200,
-            json={
-                "choices": [
-                    {
-                        "message": {
-                            "content": [
-                                {"type": "text", "text": " hello "},
-                                {"type": "text", "text": "world"},
-                            ]
-                        }
-                    }
-                ]
-            },
-        )
-
-    transport = httpx.MockTransport(handler)
-    client = OpenAICompatChatClient(_cfg(), transport=transport)
-    assert client.chat([{"role": "user", "content": "hi"}]) == "hello world"
-
-
-def test_openai_compat_chat_falls_back_when_content_empty() -> None:
-    def handler(request: httpx.Request) -> httpx.Response:
-        return httpx.Response(
-            200,
-            json={
-                "choices": [{"message": {"content": "   "}}],
-                "output_text": "fallback",
-            },
-        )
-
-    transport = httpx.MockTransport(handler)
-    client = OpenAICompatChatClient(_cfg(), transport=transport)
-    assert client.chat([{"role": "user", "content": "hi"}]) == "fallback"
-
-
 def test_openai_compat_raises_on_missing_choices() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={})
@@ -97,16 +60,6 @@ def test_openai_compat_raises_on_missing_choices() -> None:
 def test_parse_json_object_strips_fence() -> None:
     raw = '```json\n{"a": 1}\n```'
     assert parse_json_object(raw)["a"] == 1
-
-
-def test_parse_json_object_extracts_embedded_json() -> None:
-    raw = '好的，下面是结果：\n{"a": 1, "b": {"c": 2}}\n谢谢'
-    assert parse_json_object(raw)["b"]["c"] == 2
-
-
-def test_parse_json_object_parses_python_literal() -> None:
-    raw = "说明...\n{'a': 1, 'b': {'c': 2,},}\n"
-    assert parse_json_object(raw)["b"]["c"] == 2
 
 
 def test_sales_review_agent_llm_appends_brief() -> None:

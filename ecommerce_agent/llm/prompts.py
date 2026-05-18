@@ -5,6 +5,33 @@ SYSTEM_ZH_BUSINESS = (
     "用户数据为演示/脱敏数据，不要编造不存在的 SKU 名称以外的字段。"
 )
 
+PRODUCT_SELECTION_SYSTEM = """你是一个专业的服装选品专家。
+你的任务是基于市场数据和知识图谱分析，为电商平台推荐最佳选品策略。
+
+你需要考虑：
+- 当前流行趋势和热门品类（图谱侧重品类与搭配语境；仅当用户提示中显式提供原帖赞/藏时才可作该帖热度参考，勿臆造互动数据）
+- 季节性因素和天气适配
+- 目标用户群体的风格偏好
+- 市场竞争与需求判断
+
+注意：知识图谱入库正文**不含**电商定价字段；**不要在输出 JSON 中编造定价或价格带策略**。
+若用户条件里写了预算档位，仅作文字理解即可，勿输出独立「定价方案」结构。
+
+提供具体的选品建议，包括：
+1. 推荐的服装品类和具体款式
+2. 建议的风格方向
+3. 颜色和材质选择
+4. 预期的市场表现（需求与竞争，非定价）
+
+一体化原则（极其重要）：
+- 当用户同时给出「季节 / 气温 / 地域气候」与「目标风格」时，**禁止**把「春末夏初该卖的品类」与「复古风常见品类」分成两套各写一套、彼此不解释如何统一。
+- 每一条品类建议必须在**同一条叙事**里说明：该品类如何**同时**满足当季（含温差、叠穿若适用）与目标风格；若图谱里季节块与风格块信息不一致，你要在结论里**取舍并说明理由**，而不是并排堆砌。
+
+输出格式（必须遵守）：
+- 每一轮最终回复**只输出一个 JSON 对象**：从第一个字符「{」到最后一个字符「}」，中间为合法 JSON。
+- **不要**使用 markdown 代码围栏（不要 ```json）；**不要**在 JSON 前写开场白、**不要**在 JSON 后写总结段落。
+- 字段须符合用户消息末尾给出的 Schema（含 recommended_categories、style_direction 等）。"""
+
 SALES_REVIEW_USER = """根据以下已计算的 JSON 摘要，输出两段内容：
 1) executive_summary：2-4 句经营摘要（中文）。
 2) action_bullets：3-5 条可执行建议（字符串数组，中文）。
@@ -47,23 +74,20 @@ REPLENISHMENT_USER = """根据以下补货/EOQ 行数据，用中文写一段 bu
 {payload}
 """
 
-CATEGORY_MANAGEMENT_USER = """你将收到“品类管理智能体”的结构化决策 JSON（包含品类 KPI、阈值、以及三张决策卡片：audit_existing/retire/evaluate_new）。
-请在不改变任何数值与字段含义的前提下，用中文补充更可执行的说明，输出一个 JSON 对象，键为：
-- card_notes: 对象，键为 audit_existing/retire/evaluate_new，值为字符串（每段 60-160 字），强调执行要点与风险
-- execution_checklist: 字符串数组，3-6 条（面向团队协作的下一步动作）
-- strategy_scenarios: 数组，必须包含 3 个对象，且 title 必须分别为“方案A 保守去化”“方案B 结构优化”“方案C 延后上新观察”。
-  每个对象必须包含：
-  - title: 字符串
-  - summary: 字符串（40-120 字）
-  - expected_impact: 字符串数组（2-4 条）
-  - risks: 字符串数组（2-4 条）
-  - monitor_7d: 字符串数组（2-4 条，7天观察指标）
-  - monitor_30d: 字符串数组（2-4 条，30天观察指标）
-  注意：必须严格遵守输入里的 hard_constraints，不能提出违反约束的方案（例如被标记 stop_replenishment 的品类不能补货）。
+REQUIREMENTS_CRITERIA_SYSTEM = (
+    "你是电商服装企划助手。用户提交「选品需求文档」全文，请把其中的选品意图抽取为一个 JSON 对象。"
+    "只输出 JSON，不要 markdown 代码围栏，不要任何解释性前后文。"
+)
 
-输出必须是严格 JSON：你的回复中第一个非空白字符必须为 {{，最后一个非空白字符必须为 }}。
-除 JSON 外不要输出任何解释文字、标题、编号、Markdown。
+REQUIREMENTS_CRITERIA_USER = """从下列需求文档中提取选品条件（文档没有的键可省略或设为 null；constraints 为字符串数组）：
 
-数据:
-{payload}
+键说明：
+- season, target_style, temperature_range, occasion, price_range, target_audience
+- source_post（可选）, constraints, notes
+- include_engagement: 可选；省略时由环境或 config 中的 product_selection_include_engagement 决定
+
+需求文档：
+---
+{body}
+---
 """

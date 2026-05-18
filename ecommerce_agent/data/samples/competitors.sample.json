@@ -1,0 +1,18 @@
+{
+  "rows": [
+    {
+      "category_key": "连衣裙",
+      "competitor_new_skus_30d": 40,
+      "price_band": "189-399",
+      "ours_new_skus_30d": 12,
+      "gap_note": "示例：竞品连衣裙上新更快（外部数据接入演示）"
+    },
+    {
+      "category_key": "外套",
+      "competitor_new_skus_30d": 20,
+      "price_band": "299-599",
+      "ours_new_skus_30d": 8,
+      "gap_note": "示例：外套价格带与我方重叠，可强调面料差异"
+    }
+  ]
+}

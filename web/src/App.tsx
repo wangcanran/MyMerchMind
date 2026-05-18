@@ -20,11 +20,9 @@ const defaultParams = (): ReportParams => ({
   seed: 42,
   top_n: 5,
   as_of: '',
-  sku_scenario: 'default',
   replenishment_cycle: 7,
   overstock_days: 45,
   feedback_memory: '',
-  category_mapping: '',
 })
 
 function App() {
@@ -35,23 +33,6 @@ function App() {
   const [mdOpen, setMdOpen] = useState(false)
   const [mdText, setMdText] = useState<string | null>(null)
   const [mdLoading, setMdLoading] = useState(false)
-
-  const applyClassDemoPreset = useCallback(() => {
-    setParams({
-      seed: 42,
-      top_n: 5,
-      as_of: '',
-      sku_scenario: 'class_demo',
-      replenishment_cycle: 7,
-      overstock_days: 45,
-      feedback_memory: '',
-      category_mapping: '',
-    })
-    setReport(null)
-    setError(null)
-    setMdOpen(false)
-    setMdText(null)
-  }, [])
 
   const runReport = useCallback(async () => {
     setLoading(true)
@@ -145,19 +126,6 @@ function App() {
             />
           </div>
           <div className="param-field">
-            <label htmlFor="sku_scenario">sku-scenario</label>
-            <select
-              id="sku_scenario"
-              value={params.sku_scenario ?? 'default'}
-              onChange={(e) =>
-                setParams((p) => ({ ...p, sku_scenario: e.target.value }))
-              }
-            >
-              <option value="default">default</option>
-              <option value="class_demo">class_demo</option>
-            </select>
-          </div>
-          <div className="param-field">
             <label htmlFor="cyc">补货周期（天）</label>
             <input
               id="cyc"
@@ -199,27 +167,8 @@ function App() {
               }
             />
           </div>
-          <div className="param-field" style={{ gridColumn: 'span 2' }}>
-            <label htmlFor="cm">category-mapping（可选绝对路径 .json/.csv）</label>
-            <input
-              id="cm"
-              type="text"
-              placeholder="为空则回退关键词规则"
-              value={params.category_mapping ?? ''}
-              onChange={(e) =>
-                setParams((p) => ({ ...p, category_mapping: e.target.value }))
-              }
-            />
-          </div>
         </div>
         <div className="param-actions">
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => applyClassDemoPreset()}
-          >
-            课堂演示预设
-          </button>
           <button
             type="button"
             className="btn btn-primary"

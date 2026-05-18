@@ -79,12 +79,6 @@ export function ContextStrip({ report }: { report: AgentReport }) {
         <span className="tabular">{c.sku_count}</span> · 趋势{' '}
         <span className="tabular">{c.trend_count}</span> · Top{' '}
         <span className="tabular">{c.top_n}</span>
-        {c.sku_scenario && (
-          <>
-            {' '}
-            · 场景 <span className="tabular">{c.sku_scenario}</span>
-          </>
-        )}
         {c.llm_enabled !== undefined && (
           <>
             {' '}
@@ -95,16 +89,6 @@ export function ContextStrip({ report }: { report: AgentReport }) {
       {c.llm_notice && (
         <p className="muted" style={{ marginTop: '0.35rem' }}>
           {c.llm_notice}
-        </p>
-      )}
-      {c.category_mapping_notice && (
-        <p className="muted" style={{ marginTop: '0.35rem' }}>
-          {c.category_mapping_notice}
-        </p>
-      )}
-      {c.experience_memory_notice && (
-        <p className="muted" style={{ marginTop: '0.35rem' }}>
-          {c.experience_memory_notice}
         </p>
       )}
     </section>

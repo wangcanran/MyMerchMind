@@ -6,12 +6,8 @@ export interface ReportContext {
   sku_count: number
   trend_count: number
   top_n: number
-  sku_scenario?: string
   llm_enabled?: boolean
-  llm_scope?: string
   llm_notice?: string | null
-  category_mapping_notice?: string | null
-  experience_memory_notice?: string | null
 }
 
 export interface SkuRowView {
@@ -103,67 +99,6 @@ export interface ProductSelection {
   data_source?: string
 }
 
-export interface CategoryKpiRow {
-  category: string
-  sku_count: number
-  total_daily_sales: number
-  sales_share_pct?: number
-  total_available: number
-  est_stock_coverage_days: number
-  avg_return_rate_pct: number
-  avg_conversion_rate_pct: number
-  avg_stock_age_days: number
-  sku_source_counts?: Record<string, number>
-  experience_hit_count?: number
-}
-
-export interface CategoryAction {
-  category: string
-  action_type: string
-  reason: string
-  impacted_skus?: string[]
-}
-
-export interface CategoryDecisions {
-  audit_existing?: unknown
-  retire?: unknown
-  evaluate_new?: unknown
-}
-
-export interface CategoryManagement {
-  category_summary?: {
-    category_count?: number
-    top_category_by_sales?: string
-    sku_total?: number
-    mapping_enabled?: boolean
-    sku_source_totals?: Record<string, number>
-    mapping_hit_skus?: number
-    mapping_hit_rate_pct?: number
-    active_category_experiences?: number
-  }
-  category_kpis?: CategoryKpiRow[]
-  category_actions?: CategoryAction[]
-  thresholds?: Record<string, number>
-  decisions?: CategoryDecisions
-  experience_candidates?: unknown[]
-  experience_candidates_all?: unknown[]
-  llm_notes?: {
-    card_notes?: Record<string, string>
-    execution_checklist?: string[]
-  } | null
-  strategy_scenarios?: {
-    title: string
-    summary: string
-    expected_impact: string[]
-    risks: string[]
-    monitor_7d: string[]
-    monitor_30d: string[]
-  }[]
-  recommendations: string[]
-  data_source?: string
-  llm_error?: string | null
-}
-
 export interface LowStockAlert {
   sku_id: string
   name: string
@@ -233,7 +168,6 @@ export interface MemorySnapshot {
 export interface AgentReport {
   context: ReportContext
   product_selection: ProductSelection
-  category_management: CategoryManagement
   sales_review: SalesReview
   inventory_review: InventoryReview
   slow_moving: SlowMoving
@@ -249,6 +183,4 @@ export interface ReportParams {
   replenishment_cycle: number
   overstock_days: number
   feedback_memory: string
-  sku_scenario?: string
-  category_mapping?: string
 }

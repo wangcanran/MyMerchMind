@@ -9,16 +9,11 @@ from .mock_product_tags import ProductTagStore
 class ERPAdapter:
     """统一的 ERP 数据访问接口"""
 
-    def __init__(
-        self,
-        seed: Optional[int] = None,
-        sku_table: Optional[Dict[str, Dict]] = None,
-        sku_scenario: str = "default",
-    ):
+    def __init__(self, seed: Optional[int] = None, sku_table: Optional[Dict[str, Dict]] = None):
         if sku_table is not None:
             self.data_source = StaticERPData(sku_table)
         else:
-            self.data_source = MockERPData(seed=seed, scenario=sku_scenario)
+            self.data_source = MockERPData(seed=seed)
         sku_ids = sorted(self.data_source.skus.keys())
         self._tag_store = ProductTagStore(seed=seed, sku_ids=sku_ids)
 

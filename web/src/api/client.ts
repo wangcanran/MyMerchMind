@@ -10,12 +10,6 @@ function toSearchParams(p: ReportParams): string {
   if (p.feedback_memory.trim()) {
     u.set('feedback_memory', p.feedback_memory.trim())
   }
-  if ((p.sku_scenario ?? '').trim()) {
-    u.set('sku_scenario', (p.sku_scenario ?? '').trim())
-  }
-  if ((p.category_mapping ?? '').trim()) {
-    u.set('category_mapping', (p.category_mapping ?? '').trim())
-  }
   return u.toString()
 }
 
