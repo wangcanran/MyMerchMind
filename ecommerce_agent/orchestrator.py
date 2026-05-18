@@ -2,10 +2,8 @@
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from .agents.inventory_warning_agent import InventoryWarningAgent
-from .agents.replenishment_calculator import ReplenishmentCalculator
+from .agents.inventory_management_agent import InventoryManagementAgent
 from .agents.sales_review_agent import SalesReviewAgent
-from .agents.slow_moving_agent import SlowMovingAgent
 from .data.erp_adapter import ERPAdapter
 from .data.trends_adapter import TrendsAdapter
 from .memory.feedback_store import FeedbackMemoryStore
@@ -50,9 +48,7 @@ class DemoOrchestrator:
         self.llm_enabled = bool(effective_llm)
 
         self.sales_agent = SalesReviewAgent(llm_client=llm_client, use_llm=effective_llm)
-        self.inventory_agent = InventoryWarningAgent(llm_client=llm_client, use_llm=effective_llm)
-        self.slow_moving_agent = SlowMovingAgent(llm_client=llm_client, use_llm=effective_llm)
-        self.replenishment_calc = ReplenishmentCalculator(
+        self.inventory_management_agent = InventoryManagementAgent(
             llm_client=llm_client,
             use_llm=effective_llm,
         )
@@ -83,19 +79,16 @@ class DemoOrchestrator:
             growing_trends=growing_trends,
             top_n=self.top_n,
         )
-        inventory_review = self.inventory_agent.analyze(
+        inventory_bundle = self.inventory_management_agent.analyze(
             sku_metrics=sku_metrics,
             replenishment_cycle_days=self.replenishment_cycle_days,
             overstock_days=self.overstock_days,
             limit=self.top_n,
         )
-
-        slow_moving = self.slow_moving_agent.analyze(sku_metrics=sku_metrics, limit=self.top_n)
-
-        replenishment = self.replenishment_calc.suggest_for_low_stock(
-            inventory_review.get("low_stock_alerts", []),
-            limit=self.top_n,
-        )
+        inventory_review = inventory_bundle.get("inventory_review", {})
+        slow_moving = inventory_bundle.get("slow_moving", {})
+        replenishment = inventory_bundle.get("replenishment", {})
+        inventory_management = inventory_bundle.get("management_summary", {})
 
         memory_snapshot = {
             "active_feedback_count": len(self.memory.list_active_items()),
@@ -125,6 +118,7 @@ class DemoOrchestrator:
             "inventory_review": inventory_review,
             "slow_moving": slow_moving,
             "replenishment": replenishment,
+            "inventory_management": inventory_management,
             "memory_snapshot": memory_snapshot,
             "actions": actions,
         }

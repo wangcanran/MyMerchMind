@@ -56,7 +56,19 @@ PRODUCT_SELECTION_USER = """根据以下趋势与规则映射结果，输出一�
 {gaps_summary}
 """
 
-INVENTORY_USER = """根据以下库存预警 JSON，用中文写一段 priorities_note（80-180 字）：说明优先处理顺序、与采购/运营的协作要点。只输出 JSON：{{"priorities_note": "..."}}。
+INVENTORY_USER = """根据以下库存管理摘要 JSON，输出严格 JSON，对象键必须为：
+- priorities_note: 120-220 字，说明本周库存处理顺序与总体策略
+- replenishment_focus: 60-140 字，聚焦补货侧关注点
+- clearance_focus: 60-140 字，聚焦去化/冻结补货侧关注点
+- coordination_checklist: 3-5 条字符串，写跨团队执行清单
+
+要求：
+- 只能引用 payload 里出现过的 SKU / 指标，不要编造不存在的数据
+- 不要自行做新的加减乘除推导；如需描述数值，直接引用 payload 现成字段
+- 只输出一个 JSON 对象，不要 Markdown、不加解释文字
+
+示例结构：
+{{"priorities_note":"...","replenishment_focus":"...","clearance_focus":"...","coordination_checklist":["..."]}}
 
 数据:
 {payload}
@@ -68,7 +80,17 @@ SLOW_MOVING_USER = """根据以下滞销 SKU 候选 JSON，用中文写一段 co
 {payload}
 """
 
-REPLENISHMENT_USER = """根据以下补货/EOQ 行数据，用中文写一段 business_comment（60-150 字）：解释为何取较大订货量、需与供应链确认的点。只输出 JSON：{{"business_comment": "..."}}。
+REPLENISHMENT_USER = """根据以下补货/EOQ 行数据，输出严格 JSON，对象键必须为：
+- business_comment: 80-180 字，解释补货逻辑与库存取舍
+- procurement_watchouts: 3-5 条字符串，写采购/供应链确认点
+
+要求：
+- 只输出一个 JSON 对象，不要 Markdown、不加解释文字
+- 不要编造 payload 中不存在的 SKU 或数值
+- 不要自行做新的四则运算或推导新库存数，只引用 payload 已给出的字段与结论
+
+示例结构：
+{{"business_comment":"...","procurement_watchouts":["..."]}}
 
 数据:
 {payload}

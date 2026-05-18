@@ -1,8 +1,32 @@
 import type { ReactNode } from 'react'
 import type { AgentReport } from '../types/report'
 
+const PRIORITY_LABELS: Record<string, string> = {
+  critical: '严重',
+  high: '高',
+  medium: '中',
+  low: '低',
+}
+
+const COVERAGE_BAND_LABELS: Record<string, string> = {
+  critical_shortage: '严重缺货',
+  replenishment_watch: '补货观察',
+  healthy: '健康',
+  overstock: '高库存',
+  deadstock_like: '近死库存',
+}
+
 function Empty({ children }: { children: ReactNode }) {
   return <p className="empty-hint">{children}</p>
+}
+
+function PriorityPill({ priority }: { priority?: string }) {
+  const level = String(priority || 'medium').toLowerCase()
+  return (
+    <span className={`priority-pill priority-pill--${level}`}>
+      {PRIORITY_LABELS[level] ?? priority ?? '中'}
+    </span>
+  )
 }
 
 export function ActionsPanel({ report }: { report: AgentReport }) {
@@ -313,9 +337,31 @@ export function ReturnSemanticsBlock({ report }: { report: AgentReport }) {
 
 export function InventoryBlock({ report }: { report: AgentReport }) {
   const inv = report.inventory_review
+  const health = inv.inventory_health
+  const llmNotes = inv.llm_notes
   return (
     <section className="card">
       <h2 className="card-title">库存预警（P1）</h2>
+      {health && (
+        <div className="kpi-row" style={{ marginBottom: '0.9rem' }}>
+          <div className="kpi">
+            <div className="kpi-label">低库存 SKU</div>
+            <div className="kpi-value tabular">{health.low_stock_skus}</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi-label">高库存 SKU</div>
+            <div className="kpi-value kpi-value--risk tabular">
+              {health.overstock_skus}
+            </div>
+          </div>
+          <div className="kpi">
+            <div className="kpi-label">平均总覆盖天数</div>
+            <div className="kpi-value tabular">
+              {health.avg_total_coverage_days?.toFixed(1) ?? '—'} 天
+            </div>
+          </div>
+        </div>
+      )}
       <h3>低库存</h3>
       {inv.low_stock_alerts?.length ? (
         <div className="data-table-wrap">
@@ -324,7 +370,9 @@ export function InventoryBlock({ report }: { report: AgentReport }) {
               <tr>
                 <th>SKU</th>
                 <th>名称</th>
-                <th>可售天</th>
+                <th>可售 / 总覆盖</th>
+                <th>优先级</th>
+                <th>主渠道</th>
                 <th>建议补货</th>
               </tr>
             </thead>
@@ -333,7 +381,21 @@ export function InventoryBlock({ report }: { report: AgentReport }) {
                 <tr key={r.sku_id} className="row-urgent">
                   <td className="tabular">{r.sku_id}</td>
                   <td>{r.name}</td>
-                  <td className="tabular">{r.coverage_days}</td>
+                  <td className="tabular">
+                    {r.coverage_days} / {r.total_coverage_days ?? '—'} 天
+                  </td>
+                  <td>
+                    <PriorityPill priority={r.urgency_level} />
+                  </td>
+                  <td>
+                    {r.channel_focus ?? '—'}
+                    {r.channel_focus_share_pct !== undefined && (
+                      <span className="muted">
+                        {' '}
+                        {r.channel_focus_share_pct.toFixed(1)}%
+                      </span>
+                    )}
+                  </td>
                   <td className="tabular">{r.suggest_replenish_qty}</td>
                 </tr>
               ))}
@@ -352,8 +414,8 @@ export function InventoryBlock({ report }: { report: AgentReport }) {
                 <th>SKU</th>
                 <th>名称</th>
                 <th>总覆盖天</th>
-                <th>库存</th>
-                <th>在途</th>
+                <th>压力分</th>
+                <th>建议动作</th>
               </tr>
             </thead>
             <tbody>
@@ -362,8 +424,8 @@ export function InventoryBlock({ report }: { report: AgentReport }) {
                   <td className="tabular">{r.sku_id}</td>
                   <td>{r.name}</td>
                   <td className="tabular">{r.total_coverage_days}</td>
-                  <td className="tabular">{r.current_stock}</td>
-                  <td className="tabular">{r.in_transit}</td>
+                  <td className="tabular">{r.pressure_score ?? '—'}</td>
+                  <td>{r.recommended_action ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -372,6 +434,159 @@ export function InventoryBlock({ report }: { report: AgentReport }) {
       ) : (
         <Empty>暂无高库存预警</Empty>
       )}
+      {inv.recommendations?.length ? (
+        <>
+          <h3 style={{ marginTop: '1rem' }}>规则建议</h3>
+          <ul className="actions-list">
+            {inv.recommendations.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {llmNotes && (
+        <div className="llm-note-card">
+          <h3>LLM 协同提示</h3>
+          {llmNotes.priorities_note && <p>{llmNotes.priorities_note}</p>}
+          {llmNotes.replenishment_focus && (
+            <p className="muted">补货焦点：{llmNotes.replenishment_focus}</p>
+          )}
+          {llmNotes.clearance_focus && (
+            <p className="muted">去化焦点：{llmNotes.clearance_focus}</p>
+          )}
+          {llmNotes.coordination_checklist?.length ? (
+            <ul className="actions-list">
+              {llmNotes.coordination_checklist.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      )}
+      {inv.llm_error && (
+        <p className="err" style={{ marginTop: '0.75rem' }}>
+          LLM：{inv.llm_error}
+        </p>
+      )}
+    </section>
+  )
+}
+
+export function InventoryManagementBlock({ report }: { report: AgentReport }) {
+  const mgmt = report.inventory_management
+  const health = mgmt.inventory_health
+  const ownerRows = Object.entries(mgmt.owner_lane_summary ?? {}).sort(
+    (a, b) => b[1] - a[1],
+  )
+  const board = mgmt.action_board ?? []
+  const digestRows = (mgmt.llm_digest ?? '')
+    .split('\n')
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  return (
+    <section className="card card--structure">
+      <h2 className="card-title">库存总控（Inventory Management）</h2>
+      {health ? (
+        <>
+          <div className="kpi-row">
+            <div className="kpi">
+              <div className="kpi-label">库存位置总量</div>
+              <div className="kpi-value tabular">
+                {health.stock_position_units}
+              </div>
+            </div>
+            <div className="kpi">
+              <div className="kpi-label">严重缺货</div>
+              <div className="kpi-value tabular">
+                {health.critical_low_stock_skus}
+              </div>
+            </div>
+            <div className="kpi">
+              <div className="kpi-label">高库存</div>
+              <div className="kpi-value kpi-value--risk tabular">
+                {health.overstock_skus}
+              </div>
+            </div>
+            <div className="kpi">
+              <div className="kpi-label">健康 SKU</div>
+              <div className="kpi-value tabular">{health.healthy_skus}</div>
+            </div>
+          </div>
+          {health.coverage_bands && (
+            <div className="tag-list" style={{ marginTop: '0.85rem' }}>
+              {Object.entries(health.coverage_bands).map(([key, count]) => (
+                <span key={key} className="tag tag--muted">
+                  {COVERAGE_BAND_LABELS[key] ?? key} ×{count}
+                </span>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <Empty>暂无库存总控摘要</Empty>
+      )}
+      {ownerRows.length ? (
+        <div className="owner-lane-grid">
+          {ownerRows.map(([owner, count]) => (
+            <div key={owner} className="owner-lane-card">
+              <div className="kpi-label">{owner} 待办</div>
+              <div className="owner-lane-value tabular">{count}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <h3 style={{ marginTop: '1rem' }}>库存动作板</h3>
+      {board.length === 0 ? (
+        <Empty>暂无跨团队动作</Empty>
+      ) : (
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>优先级</th>
+                <th>Owner</th>
+                <th>SKU</th>
+                <th>动作</th>
+                <th>原因</th>
+              </tr>
+            </thead>
+            <tbody>
+              {board.map((row, index) => (
+                <tr key={`${row.source}-${row.owner}-${row.sku_id}-${index}`}>
+                  <td>
+                    <PriorityPill priority={row.priority} />
+                  </td>
+                  <td>{row.owner}</td>
+                  <td className="tabular">{row.sku_id}</td>
+                  <td>{row.title}</td>
+                  <td>{row.reason}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {mgmt.recommendations?.length ? (
+        <>
+          <h3 style={{ marginTop: '1rem' }}>总控建议</h3>
+          <ul className="actions-list">
+            {mgmt.recommendations.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {digestRows.length ? (
+        <div className="llm-note-card">
+          <h3>LLM 总结</h3>
+          <ul className="actions-list">
+            {digestRows.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   )
 }
@@ -417,6 +632,7 @@ export function SlowMovingBlock({ report }: { report: AgentReport }) {
 
 export function ReplenishmentBlock({ report }: { report: AgentReport }) {
   const rows = report.replenishment.replenishment_rows ?? []
+  const llmNotes = report.replenishment.llm_notes
   return (
     <section className="card card--structure">
       <h2 className="card-title">补货 EOQ（M3.3）</h2>
@@ -428,8 +644,10 @@ export function ReplenishmentBlock({ report }: { report: AgentReport }) {
             <thead>
               <tr>
                 <th>SKU</th>
+                <th>优先级</th>
                 <th>建议订货</th>
                 <th>EOQ</th>
+                <th>触发条件</th>
               </tr>
             </thead>
             <tbody>
@@ -438,13 +656,45 @@ export function ReplenishmentBlock({ report }: { report: AgentReport }) {
                   <td className="tabular">
                     {r.sku_id} {r.name}
                   </td>
+                  <td>
+                    <PriorityPill priority={r.order_priority} />
+                  </td>
                   <td className="tabular">{r.suggested_order_qty}</td>
                   <td className="tabular">{r.eoq?.eoq_units ?? 0}</td>
+                  <td>{r.order_trigger ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+      {report.replenishment.recommendations?.length ? (
+        <>
+          <h3 style={{ marginTop: '1rem' }}>补货建议</h3>
+          <ul className="actions-list">
+            {report.replenishment.recommendations.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {llmNotes && (
+        <div className="llm-note-card">
+          <h3>采购解读</h3>
+          {llmNotes.business_comment && <p>{llmNotes.business_comment}</p>}
+          {llmNotes.procurement_watchouts?.length ? (
+            <ul className="actions-list">
+              {llmNotes.procurement_watchouts.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      )}
+      {report.replenishment.llm_error && (
+        <p className="err" style={{ marginTop: '0.75rem' }}>
+          LLM：{report.replenishment.llm_error}
+        </p>
       )}
     </section>
   )
