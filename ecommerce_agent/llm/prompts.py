@@ -56,7 +56,19 @@ PRODUCT_SELECTION_USER = """根据以下趋势与规则映射结果，输出一�
 {gaps_summary}
 """
 
-INVENTORY_USER = """根据以下库存预警 JSON，用中文写一段 priorities_note（80-180 字）：说明优先处理顺序、与采购/运营的协作要点。只输出 JSON：{{"priorities_note": "..."}}。
+INVENTORY_USER = """根据以下库存管理摘要 JSON，输出严格 JSON，对象键必须为：
+- priorities_note: 120-220 字，说明本周库存处理顺序与总体策略
+- replenishment_focus: 60-140 字，聚焦补货侧关注点
+- clearance_focus: 60-140 字，聚焦去化/冻结补货侧关注点
+- coordination_checklist: 3-5 条字符串，写跨团队执行清单
+
+要求：
+- 只能引用 payload 里出现过的 SKU / 指标，不要编造不存在的数据
+- 不要自行做新的加减乘除推导；如需描述数值，直接引用 payload 现成字段
+- 只输出一个 JSON 对象，不要 Markdown、不加解释文字
+
+示例结构：
+{{"priorities_note":"...","replenishment_focus":"...","clearance_focus":"...","coordination_checklist":["..."]}}
 
 数据:
 {payload}
@@ -68,7 +80,17 @@ SLOW_MOVING_USER = """根据以下滞销 SKU 候选 JSON，用中文写一段 co
 {payload}
 """
 
-REPLENISHMENT_USER = """根据以下补货/EOQ 行数据，用中文写一段 business_comment（60-150 字）：解释为何取较大订货量、需与供应链确认的点。只输出 JSON：{{"business_comment": "..."}}。
+REPLENISHMENT_USER = """根据以下补货/EOQ 行数据，输出严格 JSON，对象键必须为：
+- business_comment: 80-180 字，解释补货逻辑与库存取舍
+- procurement_watchouts: 3-5 条字符串，写采购/供应链确认点
+
+要求：
+- 只输出一个 JSON 对象，不要 Markdown、不加解释文字
+- 不要编造 payload 中不存在的 SKU 或数值
+- 不要自行做新的四则运算或推导新库存数，只引用 payload 已给出的字段与结论
+
+示例结构：
+{{"business_comment":"...","procurement_watchouts":["..."]}}
 
 数据:
 {payload}
@@ -91,3 +113,42 @@ REQUIREMENTS_CRITERIA_USER = """从下列需求文档中提取选品条件（文
 {body}
 ---
 """
+
+DYNAMIC_PRICING_SYSTEM = """你是一位经验丰富的电商定价策略专家。
+你的任务是根据所提供的商品信息、竞品价格、成本、季节因素等，给出一个合理的建议零售价，并提供分析摘要。
+
+你需要考虑：
+- 市场竞争格局（竞品价格分布）
+- 成本与利润空间
+- 季节性对需求的影像
+- 品牌定位与目标用户群
+
+输出格式（必须遵守）：
+- 你的**全部**回复内容只能是一个 JSON 对象，不要有任何其它字符。
+- **不要**使用 markdown 代码围栏（不要 ```json）。
+- **不要**在 JSON 前写开场白、**不要**在 JSON 后写总结段落。
+- 字段须符合用户消息末尾给出的 Schema。
+"""
+
+DYNAMIC_PRICING_USER = """请根据以下信息，为商品提供定价建议。
+
+商品信息:
+{product_info}
+
+竞品价格: {competitor_prices}
+本店成本价: {store_cost_price}
+季节系数: {seasonal_factor}
+
+请严格按照以下JSON格式输出：
+
+```json
+{
+  "analysis_summary": "综合分析摘要，说明定价策略的思考过程。",
+  "suggested_price": 129.9,
+  "price_range": [119.9, 139.9],
+  "confidence_score": 0.85,
+  "reasoning": "简要说明定价理由，例如'在竞品价格中具有竞争力，同时保证了合理的利润空间'。"
+}
+```
+"""
+

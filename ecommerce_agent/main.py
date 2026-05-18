@@ -42,6 +42,7 @@ def build_markdown_report(report: Dict) -> str:
     selection = report.get("product_selection", {})
     slow = report.get("slow_moving", {})
     replen = report.get("replenishment", {})
+    inventory_management = report.get("inventory_management", {})
     memory_snap = report.get("memory_snapshot", {})
 
     lines: List[str] = []
@@ -214,6 +215,15 @@ def build_markdown_report(report: Dict) -> str:
     lines.append("")
 
     lines.append("## === INVENTORY WARNINGS (P1) ===")
+    inv_health = inventory.get("inventory_health") or {}
+    if inv_health:
+        lines.append(
+            f"- 库存健康：低库存 {inv_health.get('low_stock_skus', 0)} 个，高库存 {inv_health.get('overstock_skus', 0)} 个，健康 SKU {inv_health.get('healthy_skus', 0)} 个"
+        )
+        lines.append(
+            f"- 覆盖天数：当前均值 {inv_health.get('avg_current_coverage_days', 0)} 天，总库存均值 {inv_health.get('avg_total_coverage_days', 0)} 天"
+        )
+    lines.append("")
     lines.append("### 低库存预警")
     low_lines = _format_inventory_lines(inventory["low_stock_alerts"], mode="low")
     lines.extend(low_lines if low_lines else ["- 暂无低库存预警"])
@@ -227,6 +237,20 @@ def build_markdown_report(report: Dict) -> str:
         lines.append("")
         lines.append("### LLM 优先级与协作")
         lines.append(inv_notes["priorities_note"])
+    if inv_notes.get("replenishment_focus"):
+        lines.append("")
+        lines.append("### LLM 补货关注点")
+        lines.append(inv_notes["replenishment_focus"])
+    if inv_notes.get("clearance_focus"):
+        lines.append("")
+        lines.append("### LLM 去化关注点")
+        lines.append(inv_notes["clearance_focus"])
+    checklist = inv_notes.get("coordination_checklist") or []
+    if checklist:
+        lines.append("")
+        lines.append("### 协同清单")
+        for i, item in enumerate(checklist, 1):
+            lines.append(f"{i}. {item}")
     if inventory.get("llm_error"):
         lines.append(f"- LLM 补充失败：{inventory['llm_error']}")
     lines.append("")
@@ -265,8 +289,30 @@ def build_markdown_report(report: Dict) -> str:
         lines.append("")
         lines.append("### LLM 业务解读")
         lines.append(replen["llm_replenishment_comment"])
+    repl_notes = replen.get("llm_notes") or {}
+    repl_watchouts = repl_notes.get("procurement_watchouts") or []
+    if repl_watchouts:
+        lines.append("")
+        lines.append("### 采购确认点")
+        for i, item in enumerate(repl_watchouts, 1):
+            lines.append(f"{i}. {item}")
     if replen.get("llm_error"):
         lines.append(f"- LLM 补充失败：{replen['llm_error']}")
+    lines.append("")
+
+    lines.append("## === INVENTORY CONTROL BOARD ===")
+    board = inventory_management.get("action_board") or []
+    if board:
+        for i, item in enumerate(board, 1):
+            lines.append(
+                f"{i}. [{item.get('owner', '未指定')}] {item.get('title', '')} — {item.get('reason', '')}"
+            )
+    else:
+        lines.append("- 暂无管理动作队列")
+    if inventory_management.get("llm_digest"):
+        lines.append("")
+        lines.append("### 管理摘要")
+        lines.append(inventory_management["llm_digest"])
     lines.append("")
 
     lines.append("## === MEMORY (M4.3) ===")

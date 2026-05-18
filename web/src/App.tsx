@@ -8,6 +8,7 @@ import {
   ChannelBlock,
   ContextStrip,
   InventoryBlock,
+  InventoryManagementBlock,
   KpiStrip,
   MemoryBlock,
   ProductSelectionBlock,
@@ -224,6 +225,7 @@ function App() {
           <ReturnSemanticsBlock report={report} />
           <SalesTables report={report} />
           <InventoryBlock report={report} />
+          <InventoryManagementBlock report={report} />
           <SlowMovingBlock report={report} />
           <ReplenishmentBlock report={report} />
           <MemoryBlock report={report} />

@@ -20,6 +20,7 @@ def test_orchestrator_structure() -> None:
     assert "inventory_review" in report
     assert "slow_moving" in report
     assert "replenishment" in report
+    assert "inventory_management" in report
     assert "memory_snapshot" in report
     assert "actions" in report
     assert report["memory_snapshot"]["active_feedback_count"] >= 0
@@ -69,6 +70,7 @@ def run_demo(output_path: Path) -> str:
     assert "=== INVENTORY WARNINGS (P1) ===" in stdout_text
     assert "=== SLOW MOVING (M3.2) ===" in stdout_text
     assert "=== REPLENISHMENT EOQ (M3.3) ===" in stdout_text
+    assert "=== INVENTORY CONTROL BOARD ===" in stdout_text
     assert "=== MEMORY (M4.3) ===" in stdout_text
     assert "=== ACTIONS ===" in stdout_text
 
