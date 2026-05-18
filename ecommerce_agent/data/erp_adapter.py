@@ -9,13 +9,21 @@ from .mock_product_tags import ProductTagStore
 class ERPAdapter:
     """统一的 ERP 数据访问接口"""
 
-    def __init__(self, seed: Optional[int] = None, sku_table: Optional[Dict[str, Dict]] = None):
+    def __init__(
+        self,
+        seed: Optional[int] = None,
+        sku_table: Optional[Dict[str, Dict]] = None,
+        tags_table: Optional[Dict[str, Dict[str, str]]] = None,
+        competitor_rows: Optional[List[Dict]] = None,
+    ):
         if sku_table is not None:
             self.data_source = StaticERPData(sku_table)
         else:
             self.data_source = MockERPData(seed=seed)
         sku_ids = sorted(self.data_source.skus.keys())
-        self._tag_store = ProductTagStore(seed=seed, sku_ids=sku_ids)
+        self._tags_table = tags_table
+        self._tag_store = None if tags_table is not None else ProductTagStore(seed=seed, sku_ids=sku_ids)
+        self._competitor_rows = competitor_rows
 
     def get_all_skus(self) -> List[Dict]:
         """获取全部 SKU 原始指标（用于复盘与预警）"""
@@ -40,13 +48,21 @@ class ERPAdapter:
 
     def get_sku_tags(self, sku_id: str) -> Dict[str, str]:
         """多维标签（领型/材质/风格/颜色）。"""
+        if self._tags_table is not None:
+            return dict(self._tags_table.get(sku_id, {}))
+        assert self._tag_store is not None
         return self._tag_store.get_sku_tags(sku_id)
 
     def get_all_sku_tags(self) -> Dict[str, Dict[str, str]]:
+        if self._tags_table is not None:
+            return {k: dict(v) for k, v in self._tags_table.items()}
+        assert self._tag_store is not None
         return self._tag_store.all_tags()
 
     def list_competitor_benchmarks(self) -> List[Dict]:
         """竞品类目对照（Gap Analysis 数据源）。"""
+        if self._competitor_rows is not None:
+            return [dict(r) for r in self._competitor_rows]
         return list_competitor_rows()
 
     def get_sales(self, sku_id: str, days: int = 7) -> Dict:

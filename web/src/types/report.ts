@@ -67,36 +67,77 @@ export interface SalesReview {
   llm_error?: string | null
 }
 
-export interface MerchMapping {
-  suggested_categories?: string[]
-  color_focus?: string[]
-  material_focus?: string[]
-  story?: string
-  matched_keyword?: string
-}
-
-export interface CompetitorGap {
-  category_key?: string
-  competitor_new_skus_30d?: number
-  ours_new_skus_30d?: number
-  gap_note?: string
-}
-
 export interface ProductSelection {
-  trend_picks: {
-    keyword?: string
-    merch_mapping: MerchMapping
-    competitor_gaps: CompetitorGap[]
-    moq: {
-      risk_level: string
-      suggested_range_pcs: number[]
-      note?: string
-    }
-    data_source?: string
-  }[]
-  recommendations: string[]
-  memory_hits: { sku_id: string; name: string; hits: unknown[] }[]
+  skipped?: boolean
+  criteria?: Record<string, unknown> | null
+  suggested_categories?: string[]
+  recommendation?: Record<string, unknown> | null
   data_source?: string
+  llm_error?: string | null
+  error?: string | null
+}
+
+export interface CategoryManagementSummary {
+  category_count?: number
+  sku_total?: number
+  top_category_by_sales?: string
+}
+
+export interface CategoryNewCandidate {
+  category?: string
+  decision?: string
+  reason?: string
+}
+
+export interface CategoryManagement {
+  skipped?: boolean
+  category_summary?: CategoryManagementSummary
+  decisions?: {
+    evaluate_new?: {
+      candidates?: CategoryNewCandidate[]
+    }
+  }
+  llm_notes?: {
+    card_notes?: {
+      audit_existing?: string
+      retire?: string
+      evaluate_new?: string
+    }
+    execution_checklist?: string[]
+  }
+  strategy_scenarios?: {
+    title?: string
+    summary?: string
+    expected_impact?: string[]
+    risks?: string[]
+    monitor_7d?: string[]
+    monitor_30d?: string[]
+  }[]
+  data_source?: string
+  llm_error?: string | null
+}
+
+export interface PricingRow {
+  category?: string
+  decision?: string
+  budget_share_pct?: number
+  competitor_price_band?: string | null
+  suggested_price?: number | null
+  pricing_mode?: string
+  rationale?: string
+}
+
+export interface Pricing {
+  skipped?: boolean
+  summary?: {
+    category_count?: number
+    priced_category_preview?: string[]
+    data_source?: string
+  }
+  pricing_rows?: PricingRow[]
+  execution_checklist?: string[]
+  recommendations?: string[]
+  llm_error?: string | null
 }
 
 export interface LowStockAlert {
@@ -168,6 +209,8 @@ export interface MemorySnapshot {
 export interface AgentReport {
   context: ReportContext
   product_selection: ProductSelection
+  category_management: CategoryManagement
+  pricing: Pricing
   sales_review: SalesReview
   inventory_review: InventoryReview
   slow_moving: SlowMoving

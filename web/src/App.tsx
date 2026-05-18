@@ -4,12 +4,14 @@ import { fetchReport, fetchReportMarkdown } from './api/client'
 import type { AgentReport, ReportParams } from './types/report'
 import {
   ActionsPanel,
+  CategoryManagementBlock,
   ChannelBlock,
   ContextStrip,
   InventoryBlock,
   KpiStrip,
   MemoryBlock,
   ProductSelectionBlock,
+  PricingBlock,
   ReplenishmentBlock,
   ReturnSemanticsBlock,
   SalesTables,
@@ -216,6 +218,8 @@ function App() {
           <ContextStrip report={report} />
           <KpiStrip report={report} />
           <ProductSelectionBlock report={report} />
+          <CategoryManagementBlock report={report} />
+          <PricingBlock report={report} />
           <ChannelBlock report={report} />
           <ReturnSemanticsBlock report={report} />
           <SalesTables report={report} />

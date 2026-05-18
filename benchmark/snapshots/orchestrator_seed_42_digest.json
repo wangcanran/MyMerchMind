@@ -1,5 +1,5 @@
 {
-  "actions_count": 13,
+  "actions_count": 9,
   "context": {
     "seed": 42,
     "sku_count": 20,
@@ -17,9 +17,9 @@
   ],
   "memory_snapshot": {
     "active_feedback_count": 2,
-    "product_selection_hits": 5
+    "product_selection_hits": 0
   },
-  "product_selection_trend_keyword": "美拉德风格",
+  "product_selection_trend_keyword": null,
   "replenishment_sku_ids": [
     "SKU1018",
     "SKU1010",

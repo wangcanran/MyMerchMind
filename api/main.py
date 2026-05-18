@@ -37,6 +37,9 @@ def _run_orchestrator(
         replenishment_cycle_days=replenishment_cycle_days,
         overstock_days=overstock_days,
         feedback_memory_path=feedback_memory_path,
+        enable_selection=True,
+        enable_category_management=True,
+        enable_pricing=True,
     )
     return orch.run()
 

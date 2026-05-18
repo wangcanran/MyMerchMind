@@ -1,5 +1,6 @@
 """Baseline demo CLI 入口。"""
 import argparse
+import json
 import os
 from datetime import date
 from pathlib import Path
@@ -58,28 +59,82 @@ def build_markdown_report(report: Dict) -> str:
     lines.append("")
 
     lines.append("## === PRODUCT SELECTION (M2) ===")
-    if selection.get("skipped") and selection.get("message"):
-        lines.append(f"- {selection['message']}")
-    if selection.get("trend_picks"):
-        pick = selection["trend_picks"][0]
-        mm = pick.get("merch_mapping", {})
-        lines.append(f"- 主趋势：{pick.get('keyword', 'N/A')}")
-        lines.append(f"- 映射说明：{mm.get('story', '')}")
-        moq = pick.get("moq", {})
-        lines.append(
-            f"- 首单区间：{moq.get('suggested_range_pcs', [])} | 风险：{moq.get('risk_level', '')}"
+    if selection.get("skipped"):
+        lines.append("- 未启用选品智能体（使用 --full 启用选品→品类管理联动）。")
+    else:
+        crit = selection.get("criteria")
+        if isinstance(crit, dict) and crit:
+            lines.append(f"- 条件：{json.dumps(crit, ensure_ascii=False)}")
+        cats = selection.get("suggested_categories")
+        if isinstance(cats, list) and cats:
+            preview = "、".join([str(x) for x in cats if str(x).strip()][:8])
+            lines.append(f"- 建议品类（Top）：{preview}")
+        rec = selection.get("recommendation")
+        if isinstance(rec, dict):
+            cs = rec.get("cross_dimension_summary")
+            if isinstance(cs, str) and cs.strip():
+                lines.append(f"- 结论摘要：{cs.strip()[:120]}")
+            conf = rec.get("confidence_score")
+            if isinstance(conf, (int, float)):
+                lines.append(f"- 置信度：{conf}")
+        if selection.get("error"):
+            if selection.get("data_source") == "rules_fallback":
+                lines.append(f"- 选品降级：{selection.get('error')}")
+            else:
+                lines.append(f"- 选品失败：{selection.get('error')}")
+        if selection.get("llm_error") and selection.get("data_source") != "rules_fallback":
+            lines.append(f"- LLM 错误：{selection.get('llm_error')}")
+    lines.append("")
+
+    category = report.get("category_management") or {}
+    lines.append("## === CATEGORY MANAGEMENT (M3) ===")
+    if isinstance(category, dict) and category and not category.get("skipped"):
+        summ = category.get("category_summary") or {}
+        if isinstance(summ, dict) and summ:
+            lines.append(
+                f"- 品类数：{summ.get('category_count', 0)} | SKU 总数：{summ.get('sku_total', 0)} | "
+                f"Top 品类：{summ.get('top_category_by_sales', 'N/A')}"
+            )
+        eval_new = ((category.get("decisions") or {}) if isinstance(category.get("decisions"), dict) else {}).get(
+            "evaluate_new"
         )
-        gaps = pick.get("competitor_gaps") or []
-        if gaps:
-            lines.append("- 竞品缺口：")
-            for g in gaps[:3]:
+        cand = None
+        if isinstance(eval_new, dict):
+            cand = eval_new.get("candidates")
+        if isinstance(cand, list) and cand:
+            lines.append("- 新品评估（示例）：")
+            for row in cand[:3]:
+                if not isinstance(row, dict):
+                    continue
                 lines.append(
-                    f"  - {g.get('category_key')}：竞品上新 {g.get('competitor_new_skus_30d')} vs 我方 {g.get('ours_new_skus_30d')} | {g.get('gap_note', '')}"
+                    f"  - {row.get('category', 'N/A')}：{row.get('decision', 'N/A')}（{row.get('reason', '')}）"
                 )
-    elif not selection.get("skipped"):
-        lines.append("- 暂无选品输出")
-    if selection.get("llm_error"):
-        lines.append(f"- LLM 补充失败：{selection['llm_error']}")
+        if category.get("llm_error"):
+            lines.append(f"- LLM 错误：{category.get('llm_error')}")
+    else:
+        lines.append("- 未启用品类管理联动（使用 --full 启用选品→品类管理联动）。")
+    lines.append("")
+
+    pricing = report.get("pricing") or {}
+    lines.append("## === PRICING (M3.1) ===")
+    if isinstance(pricing, dict) and pricing and not pricing.get("skipped"):
+        summ = pricing.get("summary") or {}
+        if isinstance(summ, dict):
+            lines.append(f"- 参与定价品类数：{summ.get('category_count', 0)}")
+        prow = pricing.get("pricing_rows")
+        if isinstance(prow, list) and prow:
+            lines.append("- 定价建议（Top）：")
+            for row in prow[:3]:
+                if not isinstance(row, dict):
+                    continue
+                cat = row.get("category", "N/A")
+                price = row.get("suggested_price", "N/A")
+                band = row.get("competitor_price_band", "N/A")
+                lines.append(f"  - {cat}：建议 ¥{price}（参考竞品价带 {band}）")
+        if pricing.get("llm_error"):
+            lines.append(f"- LLM 错误：{pricing.get('llm_error')}")
+    else:
+        lines.append("- 未启用定价智能体（使用 --full 启用选品→品类管理→定价联动）。")
     lines.append("")
 
     lines.append("## === SALES REVIEW (P0) ===")
@@ -232,11 +287,26 @@ def build_markdown_report(report: Dict) -> str:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="运行电商运营 Agent baseline demo")
     parser.add_argument("--demo", action="store_true", help="运行 demo 模式")
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="启用选品→品类管理→定价联动（默认跳过选品/品类管理/定价，以保证 baseline 可离线运行）",
+    )
     parser.add_argument("--seed", type=int, default=42, help="随机种子，保证输出可复现")
     parser.add_argument("--top-n", type=int, default=5, help="榜单展示数量")
     parser.add_argument("--as-of", default=date.today().isoformat(), help="报告日期")
     parser.add_argument("--replenishment-cycle", type=int, default=7, help="补货周期（天）")
     parser.add_argument("--overstock-days", type=int, default=45, help="高库存阈值（总覆盖天数）")
+    parser.add_argument(
+        "--selection-requirements",
+        default="",
+        help="选品需求文档路径（md/txt）；为空则使用内置 demo 条件",
+    )
+    parser.add_argument(
+        "--category-mapping",
+        default="",
+        help="SKU→品类映射文件（.json/.csv），为空则用内置规则抽取",
+    )
     parser.add_argument(
         "--feedback-memory",
         default="",
@@ -264,6 +334,8 @@ def main() -> int:
     args = parse_args()
 
     fb_path = Path(args.feedback_memory) if args.feedback_memory else None
+    cat_map = Path(args.category_mapping) if args.category_mapping else None
+    sel_req = Path(args.selection_requirements) if args.selection_requirements else None
 
     if getattr(args, "llm_model", "") and args.llm_model.strip():
         os.environ["LLM_MODEL"] = args.llm_model.strip()
@@ -275,6 +347,11 @@ def main() -> int:
         replenishment_cycle_days=args.replenishment_cycle,
         overstock_days=args.overstock_days,
         feedback_memory_path=fb_path,
+        category_mapping_path=cat_map,
+        selection_requirements_path=sel_req,
+        enable_selection=bool(args.full),
+        enable_category_management=bool(args.full),
+        enable_pricing=bool(args.full),
         use_llm=args.llm,
     )
     report = orchestrator.run()

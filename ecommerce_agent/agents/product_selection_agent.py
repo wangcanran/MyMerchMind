@@ -249,8 +249,11 @@ class ProductSelectionAgent:
             loop.close()
 
     async def analyze_async(self, criteria: dict) -> dict:
-        await self._ensure_kg_initialized()
-        kg_insights = await self._query_knowledge_graph(criteria)
+        skip_kg = bool(criteria.get("_skip_kg")) or not Path(self.kg_working_dir).exists()
+        kg_insights: Dict[str, Any] = {}
+        if not skip_kg:
+            await self._ensure_kg_initialized()
+            kg_insights = await self._query_knowledge_graph(criteria)
         user_prompt = self._build_analysis_prompt(criteria, kg_insights)
 
         try:

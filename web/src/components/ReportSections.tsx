@@ -97,54 +97,176 @@ export function ContextStrip({ report }: { report: AgentReport }) {
 
 export function ProductSelectionBlock({ report }: { report: AgentReport }) {
   const ps = report.product_selection
-  const pick = ps.trend_picks?.[0]
   return (
     <section className="card card--selection">
       <h2 className="card-title">选品（M2）</h2>
-      {!pick ? (
+      {ps.skipped ? (
         <Empty>暂无选品输出</Empty>
       ) : (
         <>
           <p>
-            <strong>主趋势：</strong>
-            {pick.keyword ?? '—'}
-          </p>
-          <p>
-            <strong>映射说明：</strong>
-            {pick.merch_mapping?.story ?? '—'}
-          </p>
-          <p className="muted">
-            类目：{(pick.merch_mapping?.suggested_categories ?? []).join('、') ||
-              '—'}
-          </p>
-          <p className="muted">
-            色彩：{(pick.merch_mapping?.color_focus ?? []).join('、')} · 材质：{' '}
-            {(pick.merch_mapping?.material_focus ?? []).join('、')}
-          </p>
-          <p>
-            <strong>首单区间：</strong>
-            <span className="tabular">
-              {(pick.moq?.suggested_range_pcs ?? []).join(' – ')}
-            </span>{' '}
-            件 · <strong>风险：</strong>
-            <span className="row-risk" style={{ color: 'var(--color-risk)' }}>
-              {pick.moq?.risk_level}
+            <strong>条件：</strong>
+            <span className="muted">
+              {ps.criteria ? JSON.stringify(ps.criteria) : '—'}
             </span>
           </p>
-          {pick.moq?.note && <p className="muted">{pick.moq.note}</p>}
-          <h3 style={{ marginTop: '0.75rem' }}>竞品缺口</h3>
-          {(pick.competitor_gaps ?? []).length === 0 ? (
-            <Empty>无竞品缺口数据</Empty>
+          <p className="muted">
+            建议品类（Top）：{(ps.suggested_categories ?? []).join('、') || '—'}
+          </p>
+          {ps.recommendation &&
+            typeof ps.recommendation.cross_dimension_summary === 'string' && (
+              <p>
+                <strong>结论摘要：</strong>
+                {String(ps.recommendation.cross_dimension_summary).slice(0, 160)}
+              </p>
+            )}
+          {typeof ps.recommendation?.confidence_score === 'number' && (
+            <p className="muted">
+              置信度：<span className="tabular">{ps.recommendation.confidence_score}</span> · 数据源：
+              {ps.data_source ?? '—'}
+            </p>
+          )}
+          {ps.error && <p className="err">选品：{ps.error}</p>}
+          {!ps.error && ps.llm_error && <p className="err">LLM：{ps.llm_error}</p>}
+        </>
+      )}
+    </section>
+  )
+}
+
+export function CategoryManagementBlock({ report }: { report: AgentReport }) {
+  const cm = report.category_management
+  const summary = cm.category_summary
+  const candidates = cm.decisions?.evaluate_new?.candidates ?? []
+  const card = cm.llm_notes?.card_notes
+  const checklist = cm.llm_notes?.execution_checklist ?? []
+  const scenarios = cm.strategy_scenarios ?? []
+
+  return (
+    <section className="card card--structure">
+      <h2 className="card-title">品类管理（M3）</h2>
+      {cm.skipped ? (
+        <Empty>暂无品类管理输出</Empty>
+      ) : (
+        <>
+          {summary && (
+            <p className="muted">
+              品类数 <span className="tabular">{summary.category_count ?? 0}</span> · SKU 总数{' '}
+              <span className="tabular">{summary.sku_total ?? 0}</span> · Top 品类{' '}
+              <span className="tabular">{summary.top_category_by_sales ?? '—'}</span>
+            </p>
+          )}
+
+          <h3 style={{ marginTop: '0.75rem' }}>新品评估</h3>
+          {candidates.length === 0 ? (
+            <Empty>暂无新品评估输出</Empty>
           ) : (
             <ul className="actions-list">
-              {(pick.competitor_gaps ?? []).slice(0, 5).map((g, i) => (
+              {candidates.slice(0, 6).map((r, i) => (
                 <li key={i}>
-                  {g.category_key}：竞品上新 {g.competitor_new_skus_30d} vs 我方{' '}
-                  {g.ours_new_skus_30d} — {g.gap_note}
+                  {r.category ?? '—'}：{r.decision ?? '—'}（{r.reason ?? '—'}）
                 </li>
               ))}
             </ul>
           )}
+
+          {card && (
+            <>
+              <h3 style={{ marginTop: '0.75rem' }}>决策卡（LLM 提示）</h3>
+              <ul className="actions-list">
+                {card.audit_existing && <li>盘点现有：{card.audit_existing}</li>}
+                {card.retire && <li>淘汰清退：{card.retire}</li>}
+                {card.evaluate_new && <li>评估新品：{card.evaluate_new}</li>}
+              </ul>
+            </>
+          )}
+
+          {checklist.length > 0 && (
+            <>
+              <h3 style={{ marginTop: '0.75rem' }}>执行清单</h3>
+              <ol className="actions-list">
+                {checklist.slice(0, 8).map((x, i) => (
+                  <li key={i}>{x}</li>
+                ))}
+              </ol>
+            </>
+          )}
+
+          {scenarios.length > 0 && (
+            <>
+              <h3 style={{ marginTop: '0.75rem' }}>受约束策略方案（LLM）</h3>
+              <ul className="actions-list">
+                {scenarios.slice(0, 3).map((s, i) => (
+                  <li key={i}>
+                    <strong>{s.title ?? `方案${i + 1}`}</strong>：{s.summary ?? '—'}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {cm.llm_error && <p className="err">LLM：{cm.llm_error}</p>}
+        </>
+      )}
+    </section>
+  )
+}
+
+export function PricingBlock({ report }: { report: AgentReport }) {
+  const p = report.pricing
+  const rows = p.pricing_rows ?? []
+  const checklist = p.execution_checklist ?? []
+  return (
+    <section className="card">
+      <h2 className="card-title">定价（M3.1）</h2>
+      {p.skipped ? (
+        <Empty>暂无定价输出</Empty>
+      ) : (
+        <>
+          <h3>定价建议</h3>
+          {rows.length === 0 ? (
+            <Empty>暂无定价输出</Empty>
+          ) : (
+            <div className="data-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>品类</th>
+                    <th>决策</th>
+                    <th>竞品价带</th>
+                    <th>建议标价</th>
+                    <th>模式</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.slice(0, 8).map((r, i) => (
+                    <tr key={`${r.category ?? 'cat'}-${i}`}>
+                      <td>{r.category ?? '—'}</td>
+                      <td>{r.decision ?? '—'}</td>
+                      <td className="tabular">{r.competitor_price_band ?? '—'}</td>
+                      <td className="tabular">
+                        {typeof r.suggested_price === 'number' ? `¥${r.suggested_price}` : '—'}
+                      </td>
+                      <td className="tabular">{r.pricing_mode ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {checklist.length > 0 && (
+            <>
+              <h3 style={{ marginTop: '0.75rem' }}>执行清单</h3>
+              <ol className="actions-list">
+                {checklist.slice(0, 6).map((x, i) => (
+                  <li key={i}>{x}</li>
+                ))}
+              </ol>
+            </>
+          )}
+
+          {p.llm_error && <p className="err">LLM：{p.llm_error}</p>}
         </>
       )}
     </section>

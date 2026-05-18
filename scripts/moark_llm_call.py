@@ -4,9 +4,22 @@ from openai import OpenAI
 
 
 def main() -> int:
-    api_key = os.environ.get("MOARK_API_KEY") or os.environ.get("LLM_API_KEY") or os.environ.get("OPENAI_API_KEY") or ""
-    base_url = os.environ.get("MOARK_BASE_URL", "https://api.moark.com/v1").strip()
-    model = os.environ.get("MOARK_MODEL", "MiniMax-M2.7").strip()
+    api_key = (
+        os.environ.get("MOARK_API_KEY")
+        or os.environ.get("LLM_API_KEY")
+        or os.environ.get("OPENAI_API_KEY")
+        or ""
+    )
+    api_key = api_key.strip().strip("`").strip()
+    if api_key.lower().startswith("bearer "):
+        api_key = api_key.split(" ", 1)[1].strip()
+
+    base_url = (
+        os.environ.get("MOARK_BASE_URL")
+        or os.environ.get("LLM_BASE_URL")
+        or "https://api.moark.com/v1"
+    ).strip()
+    model = (os.environ.get("MOARK_MODEL") or os.environ.get("LLM_MODEL") or "MiniMax-M2.7").strip()
 
     print("Using base_url:", base_url)
     print("Using model:", model)

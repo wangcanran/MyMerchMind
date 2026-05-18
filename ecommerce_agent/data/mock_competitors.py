@@ -1,5 +1,5 @@
 """模拟竞品类目数据，用于 Gap Analysis（Issue 2.2）。"""
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 # category_key 与商品名称中的款式词对齐（规则匹配用）
 COMPETITOR_BY_CATEGORY: List[Dict] = [
@@ -46,7 +46,8 @@ def list_competitor_rows() -> List[Dict]:
     return [dict(row) for row in COMPETITOR_BY_CATEGORY]
 
 
-def get_rows_for_categories(category_keys: List[str]) -> List[Dict]:
+def get_rows_for_categories(category_keys: List[str], rows: Optional[List[Dict]] = None) -> List[Dict]:
     """按类目关键字筛选竞品行。"""
     keys = set(category_keys)
-    return [row for row in COMPETITOR_BY_CATEGORY if row["category_key"] in keys]
+    source = rows if rows is not None else COMPETITOR_BY_CATEGORY
+    return [row for row in source if row.get("category_key") in keys]

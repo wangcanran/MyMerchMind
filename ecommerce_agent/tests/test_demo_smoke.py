@@ -15,6 +15,7 @@ def test_orchestrator_structure() -> None:
 
     report = DemoOrchestrator(seed=42, top_n=3, as_of="2026-04-06").run()
     assert "product_selection" in report
+    assert "pricing" in report
     assert "sales_review" in report
     assert "inventory_review" in report
     assert "slow_moving" in report
@@ -61,6 +62,7 @@ def run_demo(output_path: Path) -> str:
     assert result.returncode == 0, stderr_text
     assert "=== DEMO CONTEXT ===" in stdout_text
     assert "=== PRODUCT SELECTION (M2) ===" in stdout_text
+    assert "=== PRICING (M3.1) ===" in stdout_text
     assert "=== SALES REVIEW (P0) ===" in stdout_text
     assert "=== CHANNEL REVIEW (M4.1) ===" in stdout_text
     assert "=== RETURN SEMANTICS (M4.2) ===" in stdout_text
