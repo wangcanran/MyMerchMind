@@ -4,8 +4,10 @@ from typing import Dict, List, Optional
 
 from .agents.inventory_management_agent import InventoryManagementAgent
 from .agents.sales_review_agent import SalesReviewAgent
+from .agents.dynamic_pricing_agent import DynamicPricingAgent
 from .data.erp_adapter import ERPAdapter
 from .data.trends_adapter import TrendsAdapter
+from .data.competitor_pricing_adapter import CompetitorPricingAPI
 from .memory.feedback_store import FeedbackMemoryStore
 from .llm import OpenAICompatChatClient, load_llm_config
 
@@ -52,6 +54,11 @@ class DemoOrchestrator:
             llm_client=llm_client,
             use_llm=effective_llm,
         )
+        self.dynamic_pricing_agent = DynamicPricingAgent(
+            llm_client=llm_client,
+            use_llm=effective_llm,
+        )
+        self.competitor_pricing_api = CompetitorPricingAPI()
 
     def run(self) -> Dict:
         sku_metrics = self.erp_adapter.get_all_skus()
@@ -90,6 +97,8 @@ class DemoOrchestrator:
         replenishment = inventory_bundle.get("replenishment", {})
         inventory_management = inventory_bundle.get("management_summary", {})
 
+        pricing_analysis = self.run_pricing_analysis(sku_metrics)
+
         memory_snapshot = {
             "active_feedback_count": len(self.memory.list_active_items()),
             "product_selection_hits": len(product_selection.get("memory_hits", [])),
@@ -119,9 +128,27 @@ class DemoOrchestrator:
             "slow_moving": slow_moving,
             "replenishment": replenishment,
             "inventory_management": inventory_management,
+            "pricing_analysis": pricing_analysis,
             "memory_snapshot": memory_snapshot,
             "actions": actions,
         }
+
+    def run_pricing_analysis(self, sku_metrics: List[Dict]) -> Dict:
+        """对一部分SKU进行定价分析。"""
+        # 为演示目的，我们只选择几个SKU进行分析
+        sample_skus = sku_metrics[:3]
+        results = []
+        for sku in sample_skus:
+            competitor_prices = self.competitor_pricing_api.get_competitor_prices(sku["sku_id"])
+            result = self.dynamic_pricing_agent.analyze(
+                product_info=sku,
+                competitor_prices=competitor_prices,
+                store_cost_price=sku.get("cost_price", 0),
+                seasonal_factor=0.8,  # 模拟的季节系数
+            )
+            results.append(result)
+        return {"pricing_suggestions": results}
+
 
     def _merge_actions(self, *groups: List[str]) -> List[str]:
         merged: List[str] = []

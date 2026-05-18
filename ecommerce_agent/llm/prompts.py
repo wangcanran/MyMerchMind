@@ -113,3 +113,42 @@ REQUIREMENTS_CRITERIA_USER = """从下列需求文档中提取选品条件（文
 {body}
 ---
 """
+
+DYNAMIC_PRICING_SYSTEM = """你是一位经验丰富的电商定价策略专家。
+你的任务是根据所提供的商品信息、竞品价格、成本、季节因素等，给出一个合理的建议零售价，并提供分析摘要。
+
+你需要考虑：
+- 市场竞争格局（竞品价格分布）
+- 成本与利润空间
+- 季节性对需求的影像
+- 品牌定位与目标用户群
+
+输出格式（必须遵守）：
+- 你的**全部**回复内容只能是一个 JSON 对象，不要有任何其它字符。
+- **不要**使用 markdown 代码围栏（不要 ```json）。
+- **不要**在 JSON 前写开场白、**不要**在 JSON 后写总结段落。
+- 字段须符合用户消息末尾给出的 Schema。
+"""
+
+DYNAMIC_PRICING_USER = """请根据以下信息，为商品提供定价建议。
+
+商品信息:
+{product_info}
+
+竞品价格: {competitor_prices}
+本店成本价: {store_cost_price}
+季节系数: {seasonal_factor}
+
+请严格按照以下JSON格式输出：
+
+```json
+{
+  "analysis_summary": "综合分析摘要，说明定价策略的思考过程。",
+  "suggested_price": 129.9,
+  "price_range": [119.9, 139.9],
+  "confidence_score": 0.85,
+  "reasoning": "简要说明定价理由，例如'在竞品价格中具有竞争力，同时保证了合理的利润空间'。"
+}
+```
+"""
+
