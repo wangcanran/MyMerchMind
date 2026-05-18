@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+.eggs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env & secrets
+.env
+.env.local
+*.pem
+
+# Logs & data
+*.log
+logs/
+data/raw/
+*.xlsx
+!docs/**/*.xlsx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local demo / smoke artifacts
+demo_report_smoke_*.md
+output/demo_report.md
+demo_report*.md
+_demo_report*.md
+demo_memory_tmp*.json
+
+# Web dashboard (Vite)
+web/node_modules/
+web/dist/
+
+# Benchmark 仿真输出（可重复生成）
+benchmark/results/*.json
+!benchmark/results/.gitkeep

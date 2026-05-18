@@ -1,0 +1,94 @@
+:root {
+  --surface-bg: #f8f7f4;
+  --surface-card: #ffffff;
+  --surface-warm: #faf6f0;
+  --surface-cool: #f4f6fb;
+  --border: #e8e6e1;
+  --border-strong: #d6d3cd;
+  --text: #1c1917;
+  --text-muted: #57534e;
+  --text-subtle: #78716c;
+
+  --color-growth: #0d9488;
+  --color-growth-bg: rgba(13, 148, 136, 0.08);
+  --color-risk: #ea580c;
+  --color-risk-bg: rgba(234, 88, 12, 0.08);
+  --color-urgent: #dc2626;
+  --color-urgent-bg: rgba(220, 38, 38, 0.08);
+  --color-structure: #4f46e5;
+  --color-structure-bg: rgba(79, 70, 229, 0.08);
+  --color-actions: rgba(13, 148, 136, 0.12);
+
+  --font-sans: 'Source Han Sans SC', 'Noto Sans SC', 'PingFang SC', system-ui,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
+
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--surface-bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100svh;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.5rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+h3 {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+p {
+  margin: 0 0 0.5rem;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+}
+
+code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--surface-warm);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}

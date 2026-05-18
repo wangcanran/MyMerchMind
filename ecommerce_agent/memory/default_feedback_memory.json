@@ -1,0 +1,26 @@
+{
+  "items": [
+    {
+      "id": "fb-demo-1",
+      "summary": "天丝混纺易皱导致高退货",
+      "material_substring": "天丝",
+      "style_substring": "",
+      "collar_substring": "",
+      "reason": "评价多次提及易皱、需熨烫",
+      "status": "active",
+      "created_at": "2026-01-10",
+      "expires_at": null
+    },
+    {
+      "id": "fb-demo-2",
+      "summary": "深色款色差投诉多",
+      "material_substring": "",
+      "style_substring": "美拉德",
+      "collar_substring": "",
+      "reason": "退货语义：颜色与图片有色差",
+      "status": "active",
+      "created_at": "2026-02-01",
+      "expires_at": null
+    }
+  ]
+}
