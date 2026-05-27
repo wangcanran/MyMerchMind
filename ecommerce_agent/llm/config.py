@@ -13,6 +13,8 @@ class LLMConfig:
     model: str
     timeout_s: float
     max_output_tokens: int
+    #: 建立 TCP/TLS 连接的上限（秒）；与 ``timeout_s``（读超时）分离，避免慢网关误判为读超时。
+    connect_timeout_s: float = 30.0
 
     @classmethod
     def from_env(cls) -> "LLMConfig":
@@ -26,8 +28,19 @@ class LLMConfig:
         if not path.startswith("/"):
             path = "/" + path
         key = (os.environ.get("LLM_API_KEY") or os.environ.get("OPENAI_API_KEY") or "").strip()
+        # 客户端会自行加 ``Authorization: Bearer …``；若 .env 里误写了 ``Bearer sk-…`` 会导致 401
+        low = key.casefold()
+        if low.startswith("bearer "):
+            key = key[7:].strip()
         model = os.environ.get("LLM_MODEL", "gpt-4o-mini")
-        timeout = float(os.environ.get("LLM_TIMEOUT_S", "60"))
+        # 选品 + 图谱场景下首 token 可能较慢，默认读超时 120s；可用 LLM_READ_TIMEOUT_S 单独覆盖。
+        read_timeout = float(
+            os.environ.get(
+                "LLM_READ_TIMEOUT_S",
+                os.environ.get("LLM_TIMEOUT_S", "120"),
+            )
+        )
+        connect_timeout = float(os.environ.get("LLM_CONNECT_TIMEOUT_S", "30"))
         # 部分网关（如 Gitee AI）要求：非流式请求 max_tokens 不得超过 4096，否则须 stream=true
         _raw_max = int(os.environ.get("LLM_MAX_OUTPUT_TOKENS", "4096"))
         max_out = max(1, min(_raw_max, 4096))
@@ -36,8 +49,9 @@ class LLMConfig:
             chat_path=path,
             api_key=key,
             model=model,
-            timeout_s=timeout,
+            timeout_s=read_timeout,
             max_output_tokens=max_out,
+            connect_timeout_s=connect_timeout,
         )
 
     def is_configured(self) -> bool:

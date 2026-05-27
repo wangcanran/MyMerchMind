@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import sys
+import unittest.mock
 
 import httpx
 
@@ -55,6 +56,36 @@ def test_openai_compat_raises_on_missing_choices() -> None:
         assert False, "expected LLMClientError"
     except LLMClientError:
         pass
+
+
+def test_openai_compat_retries_on_read_timeout() -> None:
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise httpx.ReadTimeout("rt", request=request)
+        return httpx.Response(200, json={"choices": [{"message": {"content": "hi"}}]})
+
+    transport = httpx.MockTransport(handler)
+    with unittest.mock.patch("ecommerce_agent.llm.client.time.sleep", lambda *a, **k: None):
+        client = OpenAICompatChatClient(_cfg(), transport=transport)
+        assert client.chat([{"role": "user", "content": "x"}]) == "hi"
+    assert calls["n"] == 3
+
+
+def test_openai_compat_timeout_exhausted_raises() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ReadTimeout("rt", request=request)
+
+    transport = httpx.MockTransport(handler)
+    with unittest.mock.patch("ecommerce_agent.llm.client.time.sleep", lambda *a, **k: None):
+        client = OpenAICompatChatClient(_cfg(), transport=transport)
+        try:
+            client.chat([{"role": "user", "content": "x"}])
+            assert False, "expected LLMClientError"
+        except LLMClientError as e:
+            assert "重试" in str(e)
 
 
 def test_parse_json_object_strips_fence() -> None:

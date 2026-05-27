@@ -96,7 +96,7 @@ _async_locks: Optional[Dict[str, asyncio.Lock]] = None
 _debug_n_locks_acquired: int = 0
 
 
-def get_final_namespace(namespace: str, workspace: str | None = None):
+def get_final_namespace(namespace: str, workspace: Optional[str] = None):
     global _default_workspace
     if workspace is None:
         workspace = _default_workspace
@@ -1091,7 +1091,7 @@ def get_internal_lock(enable_logging: bool = False) -> UnifiedLock:
 
 
 def get_storage_keyed_lock(
-    keys: str | list[str], namespace: str = "default", enable_logging: bool = False
+    keys: Union[str, List[str]], namespace: str = "default", enable_logging: bool = False
 ) -> _KeyedLockContext:
     """Return unified storage keyed lock for ensuring atomic operations across different namespaces"""
     global _storage_keyed_lock
@@ -1264,7 +1264,7 @@ def initialize_share_data(workers: int = 1):
     _initialized = True
 
 
-async def initialize_pipeline_status(workspace: str | None = None):
+async def initialize_pipeline_status(workspace: Optional[str] = None):
     """
     Initialize pipeline_status share data with default values.
     This function could be called before during FASTAPI lifespan for each worker.
@@ -1306,7 +1306,7 @@ async def initialize_pipeline_status(workspace: str | None = None):
         )
 
 
-async def get_update_flag(namespace: str, workspace: str | None = None):
+async def get_update_flag(namespace: str, workspace: Optional[str] = None):
     """
     Create a namespace's update flag for a workers.
     Returen the update flag to caller for referencing or reset.
@@ -1341,7 +1341,7 @@ async def get_update_flag(namespace: str, workspace: str | None = None):
         return new_update_flag
 
 
-async def set_all_update_flags(namespace: str, workspace: str | None = None):
+async def set_all_update_flags(namespace: str, workspace: Optional[str] = None):
     """Set all update flag of namespace indicating all workers need to reload data from files"""
     global _update_flags
     if _update_flags is None:
@@ -1357,7 +1357,7 @@ async def set_all_update_flags(namespace: str, workspace: str | None = None):
             _update_flags[final_namespace][i].value = True
 
 
-async def clear_all_update_flags(namespace: str, workspace: str | None = None):
+async def clear_all_update_flags(namespace: str, workspace: Optional[str] = None):
     """Clear all update flag of namespace indicating all workers need to reload data from files"""
     global _update_flags
     if _update_flags is None:
@@ -1373,7 +1373,7 @@ async def clear_all_update_flags(namespace: str, workspace: str | None = None):
             _update_flags[final_namespace][i].value = False
 
 
-async def get_all_update_flags_status(workspace: str | None = None) -> Dict[str, list]:
+async def get_all_update_flags_status(workspace: Optional[str] = None) -> Dict[str, list]:
     """
     Get update flags status for all namespaces.
 
@@ -1415,7 +1415,7 @@ async def get_all_update_flags_status(workspace: str | None = None) -> Dict[str,
 
 
 async def try_initialize_namespace(
-    namespace: str, workspace: str | None = None
+    namespace: str, workspace: Optional[str] = None
 ) -> bool:
     """
     Returns True if the current worker(process) gets initialization permission for loading data later.
@@ -1443,7 +1443,7 @@ async def try_initialize_namespace(
 
 
 async def get_namespace_data(
-    namespace: str, first_init: bool = False, workspace: str | None = None
+    namespace: str, first_init: bool = False, workspace: Optional[str] = None
 ) -> Dict[str, Any]:
     """get the shared data reference for specific namespace
 
@@ -1507,7 +1507,7 @@ class NamespaceLock:
     """
 
     def __init__(
-        self, namespace: str, workspace: str | None = None, enable_logging: bool = False
+        self, namespace: str, workspace: Optional[str] = None, enable_logging: bool = False
     ):
         self._namespace = namespace
         self._workspace = workspace
@@ -1554,7 +1554,7 @@ class NamespaceLock:
 
 
 def get_namespace_lock(
-    namespace: str, workspace: str | None = None, enable_logging: bool = False
+    namespace: str, workspace: Optional[str] = None, enable_logging: bool = False
 ) -> NamespaceLock:
     """Get a reusable namespace lock wrapper.
 
@@ -1671,7 +1671,7 @@ def finalize_share_data():
     direct_log(f"Process {os.getpid()} storage data finalization complete")
 
 
-def set_default_workspace(workspace: str | None = None):
+def set_default_workspace(workspace: Optional[str] = None):
     """
     Set default workspace for namespace operations for backward compatibility.
 

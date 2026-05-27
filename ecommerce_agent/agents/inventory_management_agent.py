@@ -45,6 +45,7 @@ class InventoryManagementAgent:
         slow_moving = self.slow_moving_agent.analyze(
             sku_metrics=sku_metrics,
             limit=limit,
+            top_sales_exempt=max(5, int(limit)),
         )
         replenishment = self.replenishment_calculator.suggest_for_low_stock(
             inventory_review.get("low_stock_alerts", []),

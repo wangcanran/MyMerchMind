@@ -25,10 +25,25 @@ class SlowMovingAgent:
         age_days_threshold: int = 60,
         conversion_threshold: float = 0.01,
         limit: int = 10,
+        top_sales_exempt: int = 5,
     ) -> Dict:
         data_source = "mock"
+        # 高日销 Top N 不进「滞销清理」池，避免与畅销榜同一 SKU 标签互斥（库龄/转化另做运营治理）
+        exempt_n = max(5, int(top_sales_exempt))
+        ranked_by_sales = sorted(
+            sku_metrics,
+            key=lambda x: (-int(x.get("daily_sales", 0)), str(x.get("sku_id", ""))),
+        )
+        fast_mover_ids = {
+            str(x.get("sku_id", "")).strip()
+            for x in ranked_by_sales[:exempt_n]
+            if str(x.get("sku_id", "")).strip()
+        }
         candidates: List[Dict] = []
         for item in sku_metrics:
+            sid = str(item.get("sku_id", "")).strip()
+            if sid and sid in fast_mover_ids:
+                continue
             age = int(item.get("stock_age_days", 0))
             conv = float(item.get("conversion_rate", 1.0))
             if age > age_days_threshold and conv < conversion_threshold:
@@ -93,6 +108,7 @@ class SlowMovingAgent:
             "thresholds": {
                 "age_days": age_days_threshold,
                 "conversion_rate": conversion_threshold,
+                "top_sales_exempt": exempt_n,
             },
             "data_source": data_source,
             "llm_notes": llm_notes,

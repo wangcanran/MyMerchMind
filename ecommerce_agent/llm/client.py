@@ -1,6 +1,7 @@
 """OpenAI 兼容 Chat Completions HTTP 客户端（httpx）。"""
 from __future__ import annotations
 
+import time
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -55,29 +56,49 @@ class OpenAICompatChatClient:
             "Content-Type": "application/json",
         }
 
-        try:
-            client_kw: Dict[str, Any] = {"timeout": self._config.timeout_s}
-            if self._transport is not None:
-                client_kw["transport"] = self._transport
-            with httpx.Client(**client_kw) as client:
-                resp = client.post(url, headers=headers, json=payload)
-                try:
-                    resp.raise_for_status()
-                except httpx.HTTPStatusError as e:
-                    body = (resp.text or "").strip()
-                    if len(body) > 800:
-                        body = body[:800] + "…"
-                    detail = f"HTTP {resp.status_code}"
-                    if body:
-                        detail += f" | 响应体: {body}"
-                    raise LLMClientError(f"HTTP 请求失败: {e}; {detail}") from e
-                data = resp.json()
-        except LLMClientError:
-            raise
-        except httpx.HTTPError as e:
-            raise LLMClientError(f"HTTP 请求失败: {e}") from e
-        except ValueError as e:
-            raise LLMClientError(f"响应非 JSON: {e}") from e
+        read_t = float(self._config.timeout_s)
+        connect_t = float(getattr(self._config, "connect_timeout_s", 30.0))
+        timeout_cfg = httpx.Timeout(
+            connect=connect_t,
+            read=read_t,
+            write=read_t,
+            pool=read_t,
+        )
+
+        data: Dict[str, Any]
+        for attempt in range(3):
+            try:
+                client_kw: Dict[str, Any] = {"timeout": timeout_cfg}
+                if self._transport is not None:
+                    client_kw["transport"] = self._transport
+                with httpx.Client(**client_kw) as client:
+                    resp = client.post(url, headers=headers, json=payload)
+                    try:
+                        resp.raise_for_status()
+                    except httpx.HTTPStatusError as e:
+                        body = (resp.text or "").strip()
+                        if len(body) > 800:
+                            body = body[:800] + "…"
+                        detail = f"HTTP {resp.status_code}"
+                        if body:
+                            detail += f" | 响应体: {body}"
+                        raise LLMClientError(f"HTTP 请求失败: {e}; {detail}") from e
+                    data = resp.json()
+                break
+            except LLMClientError:
+                raise
+            except httpx.TimeoutException as e:
+                if attempt < 2:
+                    time.sleep(1.0 * (attempt + 1))
+                    continue
+                raise LLMClientError(
+                    "HTTP 请求失败: 连接或读取超时（已自动重试 3 次）。"
+                    f"可适当增大环境变量 LLM_TIMEOUT_S 或 LLM_READ_TIMEOUT_S（当前读超时 {read_t:g}s）。"
+                ) from e
+            except httpx.HTTPError as e:
+                raise LLMClientError(f"HTTP 请求失败: {e}") from e
+            except ValueError as e:
+                raise LLMClientError(f"响应非 JSON: {e}") from e
 
         try:
             choices = data.get("choices") or []

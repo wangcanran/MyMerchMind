@@ -38,6 +38,16 @@ output/demo_report.md
 demo_report*.md
 _demo_report*.md
 demo_memory_tmp*.json
+_exp_*.json
+_exp_*.txt
+_test_*.json
+tmp_probe*.py
+demo_*.json
+demo_*.txt
+demo_*.md
+package-lock.json
+package.json
+.claude/
 
 # Web dashboard (Vite)
 web/node_modules/

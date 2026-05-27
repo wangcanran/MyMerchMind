@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 def _split_channel_default(daily_sales: int) -> Dict[str, int]:
@@ -26,6 +26,11 @@ def _normalize_sku_record(sku_id: str, raw: Dict[str, Any]) -> Dict[str, Any]:
     return_rate = float(raw.get("return_rate", 0.05) or 0.0)
     conversion = float(raw.get("conversion_rate", 0.01) or 0.0)
     stock_age = int(raw.get("stock_age_days", 30) or 0)
+
+    raw_price = raw.get("price")
+    price: Optional[float] = float(raw_price) if raw_price is not None else None
+    raw_cost = raw.get("cost_price")
+    cost_price: Optional[float] = float(raw_cost) if raw_cost is not None else None
 
     ch = raw.get("channel_sales")
     if isinstance(ch, dict):
@@ -56,6 +61,8 @@ def _normalize_sku_record(sku_id: str, raw: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "name": name,
+        "price": price,
+        "cost_price": cost_price,
         "daily_sales": daily,
         "stock": stock,
         "in_transit": in_transit,

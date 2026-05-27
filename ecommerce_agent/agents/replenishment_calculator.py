@@ -13,24 +13,41 @@ def compute_eoq(
     ordering_cost: float,
     holding_cost_per_unit_per_year: float,
     seasonal_factor: float = 1.0,
+    cost_price: float = 0.0,
+    holding_cost_rate: float = 0.20,
 ) -> Dict:
-    """经典 EOQ：Q = sqrt(2 D S / H)，D 为年需求量。"""
-    if daily_demand <= 0 or ordering_cost <= 0 or holding_cost_per_unit_per_year <= 0:
+    """经典 EOQ：Q = sqrt(2 D S / H)，D 为年需求量。
+
+    若提供 cost_price > 0，则 H = cost_price × holding_cost_rate（按成本价的
+    年持有比例计算，默认 20%，涵盖资金占用、仓储、折旧损耗）；
+    否则使用传入的固定 holding_cost_per_unit_per_year。
+    """
+    if daily_demand <= 0 or ordering_cost <= 0:
         return {
             "eoq_units": 0,
             "annual_demand": 0.0,
             "seasonal_factor": seasonal_factor,
             "note": "参数无效，无法计算 EOQ",
         }
+    # 动态持有成本：按成本价比例
+    if cost_price > 0:
+        h = cost_price * holding_cost_rate
+    else:
+        h = holding_cost_per_unit_per_year
+    if h <= 0:
+        h = holding_cost_per_unit_per_year or 8.0
+
     annual_demand = daily_demand * 365.0
-    eoq_raw = math.sqrt(2 * annual_demand * ordering_cost / holding_cost_per_unit_per_year)
+    eoq_raw = math.sqrt(2 * annual_demand * ordering_cost / h)
     eoq_adjusted = eoq_raw * seasonal_factor
     return {
         "eoq_units": int(round(eoq_adjusted)),
         "eoq_raw": int(round(eoq_raw)),
         "annual_demand": round(annual_demand, 2),
         "seasonal_factor": seasonal_factor,
-        "formula": "sqrt(2 * D * S / H) * seasonal_factor，其中 D 为年需求量",
+        "holding_cost_used": round(h, 2),
+        "holding_cost_source": "cost_price_ratio" if cost_price > 0 else "fixed",
+        "formula": "sqrt(2 * D * S / H) * seasonal_factor",
         "data_source": "mock",
     }
 
@@ -63,11 +80,13 @@ class ReplenishmentCalculator:
         rows: List[Dict[str, Any]] = []
         for row in low_stock_alerts[:limit]:
             daily_demand = float(row.get("daily_sales", 0))
+            cost_price = float(row.get("cost_price", 0))
             eoq = compute_eoq(
                 daily_demand,
                 self.ordering_cost,
                 self.holding_cost_per_unit_per_year,
                 self.seasonal_factor,
+                cost_price=cost_price,
             )
             stock_position = int(row.get("stock_position", 0))
             target_stock_units = int(row.get("target_stock_units", 0))

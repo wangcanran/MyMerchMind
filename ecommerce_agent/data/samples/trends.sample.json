@@ -2,21 +2,21 @@
   "trends": [
     {
       "keyword": "美拉德风格",
-      "platform": "小红书",
+      "platform": "mock",
       "heat_score": 42000,
       "growth_rate": 0.35,
       "timestamp": "2026-04-01T10:00:00"
     },
     {
       "keyword": "静奢风衬衫",
-      "platform": "抖音",
+      "platform": "mock",
       "heat_score": 31000,
       "growth_rate": 0.12,
       "timestamp": "2026-04-01T09:00:00"
     },
     {
       "keyword": "多巴胺穿搭",
-      "platform": "小红书",
+      "platform": "mock",
       "heat_score": 28000,
       "growth_rate": 0.08,
       "timestamp": "2026-04-01T08:00:00"

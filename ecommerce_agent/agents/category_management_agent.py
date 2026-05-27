@@ -1,7 +1,9 @@
 import json
 import re
+from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+from ..config.return_rate_thresholds import high_return_rate_pct
 from ..llm import prompts
 from ..llm.client import LLMClientError, OpenAICompatChatClient
 from ..llm.json_util import parse_json_object
@@ -57,6 +59,7 @@ class CategoryManagementAgent:
         category_experiences: Optional[List[Dict[str, Any]]] = None,
         top_n: int = 5,
     ) -> Dict:
+        boundary_llm_error: Optional[str] = None
         category_rows: Dict[str, Dict[str, object]] = {}
         source_totals = {"mapping": 0, "keyword": 0, "unknown": 0}
         exp_counts: Dict[str, int] = {}
@@ -164,9 +167,11 @@ class CategoryManagementAgent:
         kpis_sorted = sorted(kpis, key=lambda x: (-int(x.get("total_daily_sales", 0)), str(x.get("category", ""))))
         top_kpis = kpis_sorted[: max(1, int(top_n))]
 
+        top_daily_sales = int(top_kpis[0]["total_daily_sales"]) if top_kpis else 0
         category_summary = {
             "category_count": len(kpis_sorted),
             "top_category_by_sales": str(top_kpis[0]["category"]) if top_kpis else "",
+            "top_category_daily_sales": top_daily_sales,
             "sku_total": len(sku_metrics),
             "mapping_enabled": bool(isinstance(category_mapping, dict) and category_mapping),
             "sku_source_totals": source_totals,
@@ -182,7 +187,7 @@ class CategoryManagementAgent:
             "high_coverage_days": 45.0,
             "medium_coverage_days": 30.0,
             "low_sales_share_pct": 10.0,
-            "high_return_rate_pct": 12.0,
+            "high_return_rate_pct": float(high_return_rate_pct()),
             "keep_sales_share_pct": 10.0,
         }
 
@@ -314,13 +319,49 @@ class CategoryManagementAgent:
             )
 
         new_product_decisions: List[Dict[str, object]] = []
-        suggested_categories = self._collect_suggested_categories(product_selection)
+        # 选品建议品类：保留 M2 原文与顺序，不做粗类归并（避免「同为衬衫但风格不同」被收成一桶）。
+        suggested_categories: List[str] = []
+        if isinstance(product_selection, dict):
+            picks = product_selection.get("trend_picks")
+            if isinstance(picks, list):
+                seen_cat: Set[str] = set()
+                for pick in picks:
+                    if not isinstance(pick, dict):
+                        continue
+                    mm = pick.get("merch_mapping") or {}
+                    if not isinstance(mm, dict):
+                        continue
+                    cats = mm.get("suggested_categories")
+                    if not isinstance(cats, list):
+                        continue
+                    for c in cats:
+                        raw = str(c).strip()
+                        if not raw or raw in seen_cat:
+                            continue
+                        seen_cat.add(raw)
+                        suggested_categories.append(raw)
         overstock_cats = [
             r
             for r in kpis_sorted
             if float(r.get("est_stock_coverage_days", 0.0)) >= float(decision_thresholds["high_coverage_days"])
         ]
-        conservative = bool(len(overstock_cats) >= 2 or len(retire_candidates) >= 1)
+        # 排除已标记为清仓/去化的品类：这些品类的高库龄是已知问题（正在处理），
+        # 不应因此阻止新品上架
+        retiring_cat_names = {
+            str(d.get("category", ""))
+            for d in portfolio_decisions
+            if d.get("status") in ("retire_candidate", "reduce")
+        }
+        active_overstock_cats = [
+            r for r in overstock_cats
+            if str(r.get("category", "")) not in retiring_cat_names
+        ]
+        # conservative 触发条件：
+        # - 有 2+ 个非清仓品类仍在积压（结构性问题，不是个别品类）
+        # - 或 retire 品类占比超过总品类数的 30%（大面积清退，说明整体结构有问题）
+        total_cat_count = max(len(kpis_sorted), 1)
+        retire_ratio = len(retire_candidates) / total_cat_count
+        conservative = bool(len(active_overstock_cats) >= 2 or retire_ratio >= 0.30)
         try:
             picks = product_selection.get("trend_picks") if isinstance(product_selection, dict) else None
             if isinstance(picks, list) and picks:
@@ -332,8 +373,34 @@ class CategoryManagementAgent:
             pass
 
         experience_candidates: List[Dict[str, object]] = []
-        for cat in sorted(suggested_categories):
-            base = self._find_kpi_row(kpis_sorted, cat)
+
+        # LLM 品类匹配（优先；失败则回退规则）
+        llm_match_results: Optional[Dict[str, Dict[str, Any]]] = None
+        if self._use_llm and self._llm:
+            llm_match_results = self._llm_match_and_decide(suggested_categories, kpis_sorted, sku_metrics, category_experiences)
+
+        for cat in suggested_categories:
+            # 尝试 LLM 判定
+            used_llm_match = False
+            if llm_match_results and cat in llm_match_results:
+                llm_d = llm_match_results[cat]
+                used_llm_match = True
+                if llm_d["is_new"]:
+                    base = None
+                    store_match_method = "llm_new"
+                    matched_store = llm_d.get("matched_store_category")
+                    match_meta = {"llm_confidence": llm_d.get("confidence"), "llm_reasoning": llm_d.get("reasoning")}
+                else:
+                    matched_store = llm_d.get("matched_store_category")
+                    base = next((r for r in kpis_sorted if str(r.get("category", "")).strip() == matched_store), None)
+                    store_match_method = "llm_existing"
+                    match_meta = {"llm_confidence": llm_d.get("confidence"), "llm_reasoning": llm_d.get("reasoning")}
+            else:
+                # 回退到规则匹配
+                base, store_match_method, matched_store, match_meta = self._match_suggested_to_store_kpi(
+                    cat, kpis_sorted
+                )
+
             match_type = "strict" if base else "none"
             current_share = float(base.get("sales_share_pct", 0.0)) if base else 0.0
             keep_share = float(decision_thresholds["keep_sales_share_pct"])
@@ -342,32 +409,60 @@ class CategoryManagementAgent:
 
             decision = "approve_new"
             reason = "来自选品智能体的趋势/竞品缺口映射建议，优先在该品类上新补位。"
-            if match_type == "strict" and meets_sales:
-                decision = "keep_selling"
-                reason = "店铺内已有相似品类且销售达标，建议继续售卖并可做小幅结构与资源微调。"
-            elif match_type == "strict" and not meets_sales:
-                decision = "adjust_or_retire"
-                reason = "店铺内已有相似品类但销售未达标，建议先做优化或清退验证，再决定是否上新扩充。"
-            elif match_type == "none" and conservative:
-                decision = "defer_new"
-                reason = "当前库存/结构压力偏高，建议延后引入新类目，优先消化库存并观察信号变化。"
+            if used_llm_match:
+                llm_d = llm_match_results[cat]
+                if llm_d["is_new"]:
+                    if conservative:
+                        decision = "defer_new"
+                        reason = f"LLM 判定为新细分品类，但当前库存压力偏高，建议延后。理由：{llm_d.get('reasoning', '')}"
+                    else:
+                        decision = "approve_new"
+                        reason = f"LLM 判定为新细分品类，建议上新。理由：{llm_d.get('reasoning', '')}"
+                else:
+                    if meets_sales:
+                        decision = "keep_selling"
+                        reason = f"LLM 判定店铺已有同类产品在售且销售达标。理由：{llm_d.get('reasoning', '')}"
+                    else:
+                        decision = "adjust_or_retire"
+                        reason = f"LLM 判定店铺已有同类但销售未达标，建议优化或清退。理由：{llm_d.get('reasoning', '')}"
+            else:
+                if match_type == "strict" and meets_sales:
+                    decision = "keep_selling"
+                    reason = "店铺内已有相似品类且销售达标，建议继续售卖并可做小幅结构与资源微调。"
+                elif match_type == "strict" and not meets_sales:
+                    decision = "adjust_or_retire"
+                    reason = "店铺内已有相似品类但销售未达标，建议先做优化或清退验证，再决定是否上新扩充。"
+                elif match_type == "none" and conservative:
+                    decision = "defer_new"
+                    reason = "当前库存/结构压力偏高，建议延后引入新类目，优先消化库存并观察信号变化。"
 
             target_share = min(max(current_share + 5.0, 10.0), 35.0)
+            boundary_llm_eligible = bool(
+                not used_llm_match and (
+                    store_match_method in ("pick_in_store", "store_token_in_pick", "fuzzy_ratio")
+                    or (store_match_method == "none" and bool(match_meta.get("fuzzy_near_miss")))
+                    or bool(match_meta.get("fuzzy_tie_risk"))
+                )
+            )
             new_product_decisions.append(
                 {
                     "category": cat,
                     "match": {
                         "match_type": match_type,
+                        "store_match_method": store_match_method,
+                        "matched_store_category": matched_store,
                         "meets_sales": meets_sales,
                         "current_sales_share_pct": round(current_share, 2),
                         "current_total_daily_sales": int(total_daily_sales),
+                        "boundary_match_meta": dict(match_meta),
+                        "boundary_llm_eligible": boundary_llm_eligible,
                     },
                     "decision": decision,
                     "reason": reason,
                     "proposed_budget_share_pct": round(target_share, 1),
                     "validation": {
                         "next_7d_sales_uplift_pct_target": 5.0,
-                        "next_30d_return_rate_pct_cap": 12.0,
+                        "next_30d_return_rate_pct_cap": float(decision_thresholds["high_return_rate_pct"]),
                     },
                 }
             )
@@ -379,6 +474,8 @@ class CategoryManagementAgent:
                         "category": cat,
                         "trigger_conditions": {
                             "store_match_type": match_type,
+                            "store_match_method": store_match_method,
+                            "matched_store_category": matched_store,
                             "conservative_mode": conservative,
                             "sales_share_pct": round(current_share, 2),
                             "coverage_pressure": len(overstock_cats),
@@ -395,6 +492,10 @@ class CategoryManagementAgent:
                         "status": "active",
                     }
                 )
+
+        self._attach_rule_category_boundary_hints(new_product_decisions)
+        if suggested_categories and self._use_llm and self._llm is not None:
+            boundary_llm_error = self._apply_llm_category_boundary_notes(new_product_decisions)
 
         recommendations: List[str] = []
         if top_kpis:
@@ -574,6 +675,7 @@ class CategoryManagementAgent:
             "llm_notes": llm_notes,
             "strategy_scenarios": strategy_scenarios,
             "llm_error": llm_error,
+            "boundary_llm_error": boundary_llm_error,
         }
 
     def _build_hard_constraints(
@@ -609,7 +711,7 @@ class CategoryManagementAgent:
         return {
             "budget_share_pct_range": [10, 35],
             "inventory_pressure_threshold_days": float(thresholds.get("medium_coverage_days", 30.0)),
-            "return_rate_cap_pct": float(thresholds.get("high_return_rate_pct", 12.0)),
+            "return_rate_cap_pct": float(thresholds.get("high_return_rate_pct", high_return_rate_pct())),
             "stop_replenishment_categories": list(dict.fromkeys(stop_replenish_categories)),
             "category_budget_ranges": budget,
         }
@@ -704,7 +806,7 @@ class CategoryManagementAgent:
         rc_text = " ".join([str(x) for x in root_causes if str(x).strip()])
         inv_pressure = ("库存" in rc_text) or ("结构" in rc_text) or cov >= float(thresholds.get("medium_coverage_days", 30.0))
         perf_under = share_pct <= float(thresholds.get("keep_sales_share_pct", 10.0))
-        return_risk = rr_pct >= float(thresholds.get("high_return_rate_pct", 12.0)) or ("退货" in rc_text) or ("尺码" in rc_text) or ("质检" in rc_text)
+        return_risk = rr_pct >= float(thresholds.get("high_return_rate_pct", high_return_rate_pct())) or ("退货" in rc_text) or ("尺码" in rc_text) or ("质检" in rc_text)
         underperform = ("未达标" in rc_text) or ("同类目" in rc_text) or ("转化" in rc_text) or ("低转化" in rc_text)
 
         if inv_pressure and perf_under:
@@ -730,7 +832,7 @@ class CategoryManagementAgent:
             )
             checks.extend(
                 [
-                    f"30 天退货率 ≤ {float(thresholds.get('high_return_rate_pct', 12.0))}%",
+                    f"30 天退货率 ≤ {float(thresholds.get('high_return_rate_pct', high_return_rate_pct()))}%",
                     "退货语义高频标签下降",
                 ]
             )
@@ -820,8 +922,10 @@ class CategoryManagementAgent:
         s = (name or "").strip()
         if not s:
             return ""
-        if "连衣裙" in s or ("裙" in s and "半身" not in s):
+        if "连衣裙" in s or ("裙" in s and "半身" not in s and "半裙" not in s):
             return "连衣裙"
+        if "半身裙" in s or "半裙" in s:
+            return "半身裙"
         if "衬衫" in s:
             return "衬衫"
         if "T恤" in s or "短袖" in s:
@@ -830,31 +934,281 @@ class CategoryManagementAgent:
             return "外套"
         if "裤" in s:
             return "裤子"
+        if "针织" in s or "开衫" in s:
+            return "针织开衫"
+        if "防晒" in s:
+            return "防晒衫"
+        if "背心" in s or "吊带" in s:
+            return "背心/吊带"
         return ""
 
-    def _collect_suggested_categories(self, product_selection: Optional[Dict]) -> Set[str]:
-        out: Set[str] = set()
-        if not isinstance(product_selection, dict):
-            return out
-        picks = product_selection.get("trend_picks")
-        if not isinstance(picks, list):
-            return out
-        for pick in picks:
-            if not isinstance(pick, dict):
+    def _llm_match_and_decide(
+        self,
+        suggested_categories: List[str],
+        kpi_rows: List[Dict[str, object]],
+        sku_metrics: Optional[List[Dict]] = None,
+        experiences: Optional[List[Dict[str, Any]]] = None,
+    ) -> Optional[Dict[str, Dict[str, Any]]]:
+        """用 LLM 判断选品建议是否与店铺现有品类重合。
+
+        返回 {category: {is_new, matched_store_category, confidence, reasoning}}
+        失败返回 None（调用方回退到规则匹配）。
+        """
+        if not self._llm or not suggested_categories:
+            return None
+
+        # 构建 SKU 名称索引（按 sku_id 查名称）
+        sku_name_map: Dict[str, str] = {}
+        if sku_metrics:
+            for item in sku_metrics:
+                sid = str(item.get("sku_id", "")).strip()
+                nm = str(item.get("name", "")).strip()
+                if sid and nm:
+                    sku_name_map[sid] = nm
+
+        # 构建店铺品类摘要（含具体 SKU 名称）
+        store_info = []
+        for r in kpi_rows:
+            cat = str(r.get("category", "")).strip()
+            if not cat:
                 continue
-            mm = pick.get("merch_mapping") or {}
-            if not isinstance(mm, dict):
-                continue
-            cats = mm.get("suggested_categories")
-            if not isinstance(cats, list):
-                continue
-            for c in cats:
-                raw = str(c).strip()
-                if not raw:
+            # 取该品类下的 SKU 名称列表
+            sku_ids = r.get("sku_ids") or []
+            sku_names = [sku_name_map[sid] for sid in sku_ids if sid in sku_name_map]
+            store_info.append({
+                "category": cat,
+                "sku_count": int(r.get("sku_count", 0)),
+                "daily_sales": int(r.get("total_daily_sales", 0)),
+                "sales_share_pct": round(float(r.get("sales_share_pct", 0)), 1),
+                "sku_names": sku_names[:5],  # 最多展示 5 个避免 token 过长
+            })
+
+        # 构建经验上下文
+        experience_text = ""
+        if experiences:
+            exp_lines = []
+            for exp in experiences[:3]:
+                ref_idx = exp.get("_ref_index", "?")
+                conf = exp.get("confidence", "")
+                title = exp.get("title", "")
+                narrative = str(exp.get("narrative", ""))
+                if len(narrative) > 100:
+                    narrative = narrative[:100] + "…"
+                exp_lines.append(f"[{ref_idx}] [{conf}] {title}：{narrative}")
+            if exp_lines:
+                experience_text = "\n".join(exp_lines)
+
+        user_msg = prompts.CATEGORY_MATCH_USER.format(
+            store_categories=json.dumps(store_info, ensure_ascii=False),
+            suggested_list=json.dumps(suggested_categories, ensure_ascii=False),
+            experience_context=experience_text or "无",
+        )
+
+        try:
+            raw = self._llm.chat(
+                [
+                    {"role": "system", "content": prompts.CATEGORY_MATCH_SYSTEM},
+                    {"role": "user", "content": user_msg},
+                ],
+                temperature=0.0,
+            )
+            parsed = parse_json_object(raw)
+            items = parsed.get("items")
+            if not isinstance(items, list):
+                return None
+
+            result: Dict[str, Dict[str, Any]] = {}
+            for item in items:
+                if not isinstance(item, dict):
                     continue
-                norm = self._extract_category(raw) or raw
-                out.add(norm)
-        return out
+                cat = str(item.get("category", "")).strip()
+                if not cat:
+                    continue
+                result[cat] = {
+                    "is_new": bool(item.get("is_new", True)),
+                    "matched_store_category": item.get("matched_store_category"),
+                    "confidence": float(item.get("confidence", 0.5)),
+                    "reasoning": str(item.get("reasoning", "")),
+                }
+            return result if result else None
+        except Exception:  # noqa: BLE001
+            return None
+
+    @staticmethod
+    def _match_suggested_to_store_kpi(
+        suggested: str,
+        kpi_rows: List[Dict[str, object]],
+    ) -> Tuple[Optional[Dict[str, object]], str, Optional[str], Dict[str, Any]]:
+        """用字符串指标把选品原文对齐到店铺已有 KPI 品类行（非向量语义）。
+
+        顺序：全等 → 店铺品类名作为子串出现在选品长句（长词优先，至少 2 字）→
+        选品短语作为子串出现在店铺品类名 → 序列相似度（长度差过大不参与，避免硬贴）。
+
+        返回 ``(kpi_row | None, method, matched_store_category, meta)``；
+        ``method`` 为 ``exact`` / ``store_token_in_pick`` / ``pick_in_store`` /
+        ``fuzzy_ratio`` / ``none``。
+
+        ``meta`` 含模糊分位与近阈值信息，供边界提示与可选 LLM 解读（不改变规则决策）。
+        """
+        meta: Dict[str, Any] = {
+            "fuzzy_best_ratio": None,
+            "fuzzy_second_ratio": None,
+            "fuzzy_threshold_used": None,
+            "fuzzy_near_miss": False,
+            "fuzzy_tie_risk": False,
+        }
+        s = (suggested or "").strip()
+        if not s:
+            return None, "none", None, meta
+
+        rows = [r for r in kpi_rows if isinstance(r, dict)]
+
+        for r in rows:
+            c = str(r.get("category", "")).strip()
+            if c == s:
+                return r, "exact", c, meta
+
+        store_labels: List[Tuple[str, Dict[str, object]]] = []
+        for r in rows:
+            c = str(r.get("category", "")).strip()
+            if c:
+                store_labels.append((c, r))
+        store_labels.sort(key=lambda x: len(x[0]), reverse=True)
+
+        for c, r in store_labels:
+            if len(c) < 2:
+                continue
+            if c in s:
+                return r, "store_token_in_pick", c, meta
+
+        if len(s) >= 2:
+            for c, r in store_labels:
+                if len(c) >= len(s) and s in c:
+                    return r, "pick_in_store", c, meta
+
+        scored: List[Tuple[float, Dict[str, object], str]] = []
+        for c, r in store_labels:
+            if len(c) < 2 or len(s) < 2:
+                continue
+            la, lb = len(s), len(c)
+            if la > lb * 3 or lb > la * 3:
+                continue
+            score = SequenceMatcher(None, s, c).ratio()
+            scored.append((score, r, c))
+        scored.sort(key=lambda x: -x[0])
+
+        if not scored:
+            return None, "none", None, meta
+
+        best_score, best_row, best_key = scored[0]
+        second_score = scored[1][0] if len(scored) > 1 else 0.0
+        short_side = min(len(s), len(best_key))
+        thresh = 0.88 if short_side <= 4 else 0.75
+        meta["fuzzy_best_ratio"] = round(float(best_score), 4)
+        meta["fuzzy_second_ratio"] = round(float(second_score), 4) if len(scored) > 1 else None
+        meta["fuzzy_threshold_used"] = round(float(thresh), 4)
+        meta["fuzzy_tie_risk"] = bool(
+            len(scored) > 1 and (best_score - second_score) <= 0.06 and best_score >= max(0.55, thresh - 0.15)
+        )
+        meta["fuzzy_near_miss"] = bool(best_score < thresh and best_score >= max(0.0, thresh - 0.12))
+
+        if best_score >= thresh:
+            return best_row, "fuzzy_ratio", best_key, meta
+
+        return None, "none", None, meta
+
+    @staticmethod
+    def _attach_rule_category_boundary_hints(rows: List[Dict[str, object]]) -> None:
+        """规则层边界提示（不调用 LLM）。"""
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            m = row.get("match") if isinstance(row.get("match"), dict) else {}
+            meta = m.get("boundary_match_meta") if isinstance(m.get("boundary_match_meta"), dict) else {}
+            method = str(m.get("store_match_method", "") or "")
+            parts: List[str] = []
+            if method in ("pick_in_store", "store_token_in_pick"):
+                parts.append(
+                    "选品词与店内品类名为包含关系对齐，可能存在「大类套小类」或风格细分未展开的情况，建议对照 ERP 类目树复核。"
+                )
+            if method == "fuzzy_ratio":
+                parts.append(
+                    "当前为字符串相似度命中；若店内存在多个近义品类名，建议人工确认是否贴对行。"
+                )
+            if meta.get("fuzzy_near_miss"):
+                parts.append(
+                    f"模糊分 {meta.get('fuzzy_best_ratio')} 未达阈值 {meta.get('fuzzy_threshold_used')}，"
+                    "规则按「店内无近义品类」处理；若业务上应归并，请手工映射。"
+                )
+            if meta.get("fuzzy_tie_risk"):
+                parts.append("存在分数接近的多个候选店内品类，边界不确定，建议人工择一。")
+            if parts:
+                row["boundary_rule_hint"] = " ".join(parts)
+
+    def _apply_llm_category_boundary_notes(self, rows: List[Dict[str, object]]) -> Optional[str]:
+        """对边界易混条目批量补充 LLM 解读（不改变 decision）。"""
+        if not self._llm:
+            return None
+        items: List[Dict[str, object]] = []
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            m = row.get("match") if isinstance(row.get("match"), dict) else {}
+            if not m.get("boundary_llm_eligible"):
+                continue
+            items.append(
+                {
+                    "category": row.get("category", ""),
+                    "decision": row.get("decision", ""),
+                    "reason": row.get("reason", ""),
+                    "store_match_method": m.get("store_match_method"),
+                    "matched_store_category": m.get("matched_store_category"),
+                    "boundary_match_meta": m.get("boundary_match_meta"),
+                    "boundary_rule_hint": row.get("boundary_rule_hint"),
+                }
+            )
+        if not items:
+            return None
+        try:
+            user_msg = prompts.CATEGORY_BOUNDARY_USER.format(
+                payload=json.dumps({"items": items[:12]}, ensure_ascii=False),
+            )
+            raw = self._llm.chat(
+                [
+                    {"role": "system", "content": prompts.CATEGORY_BOUNDARY_SYSTEM},
+                    {"role": "user", "content": user_msg},
+                ],
+                temperature=0.0,
+            )
+            parsed = parse_json_object(raw)
+            out_items = parsed.get("items")
+            if not isinstance(out_items, list):
+                raise ValueError("缺少 items 数组")
+            by_cat: Dict[str, Dict[str, object]] = {}
+            for it in out_items:
+                if not isinstance(it, dict):
+                    continue
+                ck = str(it.get("category", "")).strip()
+                if ck:
+                    by_cat[ck] = it
+            for row in rows:
+                if not isinstance(row, dict):
+                    continue
+                cat = str(row.get("category", "")).strip()
+                hit = by_cat.get(cat)
+                if not isinstance(hit, dict):
+                    continue
+                m = row.get("match") if isinstance(row.get("match"), dict) else {}
+                if not m.get("boundary_llm_eligible"):
+                    continue
+                row["boundary_llm"] = {
+                    "boundary_summary": str(hit.get("boundary_summary", "") or "").strip(),
+                    "alignment_comment": str(hit.get("alignment_comment", "") or "").strip(),
+                    "cautions": _clean_text_list(hit.get("cautions"), min_items=0),
+                }
+            return None
+        except (LLMClientError, ValueError, TypeError) as e:
+            return str(e)
 
     def _find_kpi_row(self, rows: List[Dict[str, object]], category: str) -> Optional[Dict[str, object]]:
         for r in rows:

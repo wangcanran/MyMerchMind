@@ -2,9 +2,11 @@
 import json
 from typing import Dict, List, Optional
 
+from ..config.return_rate_thresholds import high_return_rate_pct, is_high_return
 from ..llm import prompts
 from ..llm.client import LLMClientError, OpenAICompatChatClient
 from ..llm.json_util import parse_json_object
+from ..report_formatting import normalize_trend_growth_in_text
 
 
 _RETURN_KEYWORDS = [
@@ -43,7 +45,7 @@ class SalesReviewAgent:
                 "summary": {
                     "total_daily_sales": 0,
                     "avg_return_rate_pct": 0.0,
-                    "top_trend": "暂无",
+                    "top_trend": "未接入",
                 },
                 "top_skus": [],
                 "lagging_skus": [],
@@ -52,6 +54,7 @@ class SalesReviewAgent:
                 "channel_dashboard": {},
                 "return_semantics": {},
                 "recommendations": ["暂无可分析数据"],
+                "segmentation_glossary": {},
                 "data_source": data_source,
                 "llm_executive_brief": None,
                 "llm_error": None,
@@ -66,22 +69,17 @@ class SalesReviewAgent:
             key=lambda x: (x["daily_sales"], x["sku_id"]),
         )
         high_return = sorted(
-            [item for item in sku_metrics if item["return_rate"] >= 0.1],
+            [item for item in sku_metrics if is_high_return(item.get("return_rate"))],
             key=lambda x: (-x["return_rate"], x["sku_id"]),
         )
 
         total_daily_sales = sum(item["daily_sales"] for item in sku_metrics)
         avg_return_rate = sum(item["return_rate"] for item in sku_metrics) / len(sku_metrics)
 
-        trend_focus = [
-            {
-                "keyword": t["keyword"],
-                "platform": t["platform"],
-                "heat_score": t["heat_score"],
-                "growth_rate_pct": round(t["growth_rate"] * 100, 1),
-            }
-            for t in top_trends[:top_n]
-        ]
+        trend_focus = self._build_trend_focus(top_trends, growing_trends)
+        top_trend_label = "未接入"
+        if trend_focus:
+            top_trend_label = str(trend_focus[0].get("keyword") or "").strip() or "未接入"
 
         channel_dashboard = self._build_channel_dashboard(sku_metrics)
         return_semantics = self._aggregate_return_semantics(sku_metrics)
@@ -96,17 +94,6 @@ class SalesReviewAgent:
             risk = high_return[0]
             recommendations.append(
                 f"优先处理 {risk['sku_id']}（{risk['name']}）退货问题，当前退货率 {risk['return_rate'] * 100:.1f}%。"
-            )
-
-        if growing_trends:
-            growth = growing_trends[0]
-            recommendations.append(
-                f"关注“{growth['keyword']}”相关款式，上升趋势明显（增长率 {growth['growth_rate'] * 100:.0f}%）。"
-            )
-        elif top_trends:
-            hottest = top_trends[0]
-            recommendations.append(
-                f"围绕当前热度最高的“{hottest['keyword']}”准备下周选品素材。"
             )
 
         ch = channel_dashboard.get("channels", {})
@@ -128,7 +115,6 @@ class SalesReviewAgent:
                     "summary": {
                         "total_daily_sales": total_daily_sales,
                         "avg_return_rate_pct": round(avg_return_rate * 100, 2),
-                        "top_trend": top_trends[0]["keyword"] if top_trends else "暂无",
                     },
                     "top_skus": [self._to_view(item) for item in ranked_sales[:top_n]],
                     "high_return_skus": [self._to_view(item) for item in high_return[:3]],
@@ -151,8 +137,12 @@ class SalesReviewAgent:
                 if not isinstance(es, str) or not isinstance(bullets, list):
                     raise ValueError("LLM 返回结构无效")
                 llm_executive_brief = {
-                    "executive_summary": es.strip(),
-                    "action_bullets": [str(b).strip() for b in bullets if str(b).strip()],
+                    "executive_summary": normalize_trend_growth_in_text(es.strip()),
+                    "action_bullets": [
+                        normalize_trend_growth_in_text(str(b).strip())
+                        for b in bullets
+                        if str(b).strip()
+                    ],
                 }
                 for b in llm_executive_brief["action_bullets"]:
                     recommendations.append(f"【LLM】{b}")
@@ -164,19 +154,58 @@ class SalesReviewAgent:
             "summary": {
                 "total_daily_sales": total_daily_sales,
                 "avg_return_rate_pct": round(avg_return_rate * 100, 2),
-                "top_trend": top_trends[0]["keyword"] if top_trends else "暂无",
             },
             "top_skus": [self._to_view(item) for item in ranked_sales[:top_n]],
             "lagging_skus": [self._to_view(item) for item in lagging_sales[:top_n]],
             "high_return_skus": [self._to_view(item) for item in high_return[:top_n]],
-            "trend_focus": trend_focus,
             "channel_dashboard": channel_dashboard,
             "return_semantics": return_semantics,
             "recommendations": recommendations,
+            "segmentation_glossary": {
+                "top_skus": "按日销量全店降序取 Top N；与 ERP 现价同快照，展示为 sku_id + 品名。",
+                "lagging_skus": "按日销量升序取 Top N（弱动销观察），不排除高库龄；清滞见库存模块。",
+                "high_return_skus": (
+                    f"退货率≥{high_return_rate_pct():g}% 降序；行动清单中为达到该阈值的每个 SKU "
+                    "生成「高退货处置」闭环（阈值见 config.return_rate_thresholds）。"
+                ),
+                "slow_moving_coordination": "滞销清理池排除日销 Top5（与 orchestrator.reporting_rules 一致），避免与高销 SKU 标签冲突。",
+            },
             "data_source": data_source,
             "llm_executive_brief": llm_executive_brief,
             "llm_error": llm_error,
         }
+
+    @staticmethod
+    def _build_trend_focus(
+        top_trends: List[Dict],
+        growing_trends: List[Dict],
+    ) -> List[Dict]:
+        """合并热度 Top 与增长趋势，供复盘与 LLM 摘要使用（字段与 ``mock_trends`` 对齐）。"""
+        out: List[Dict] = []
+        seen: set[str] = set()
+
+        def _push(row: Dict, source: str) -> None:
+            if not isinstance(row, dict):
+                return
+            kw = str(row.get("keyword", "")).strip()
+            if not kw or kw in seen:
+                return
+            seen.add(kw)
+            out.append(
+                {
+                    "keyword": kw,
+                    "heat_score": row.get("heat_score"),
+                    "growth_rate": row.get("growth_rate"),
+                    "platform": row.get("platform"),
+                    "source": source,
+                }
+            )
+
+        for t in top_trends or []:
+            _push(t, "heat_top")
+        for t in growing_trends or []:
+            _push(t, "growth")
+        return out
 
     def _build_channel_dashboard(self, sku_metrics: List[Dict]) -> Dict:
         totals = {"live": 0, "private": 0, "shelf": 0}
@@ -245,6 +274,13 @@ class SalesReviewAgent:
         }
 
     def _to_view(self, item: Dict) -> Dict:
+        raw_p = item.get("price")
+        list_price = None
+        if raw_p is not None:
+            try:
+                list_price = int(round(float(raw_p)))
+            except (TypeError, ValueError):
+                list_price = None
         return {
             "sku_id": item["sku_id"],
             "name": item["name"],
@@ -252,4 +288,5 @@ class SalesReviewAgent:
             "stock": item["stock"],
             "in_transit": item["in_transit"],
             "return_rate_pct": round(item["return_rate"] * 100, 1),
+            "list_price": list_price,
         }

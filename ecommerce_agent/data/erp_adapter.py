@@ -1,6 +1,8 @@
 """ERP/OMS 统一适配层"""
 from typing import Dict, List, Optional
 
+from ..config.return_rate_thresholds import high_return_fraction
+
 from .mock_competitors import list_competitor_rows
 from .mock_erp import MockERPData, StaticERPData
 from .mock_product_tags import ProductTagStore
@@ -33,6 +35,8 @@ class ERPAdapter:
             items.append({
                 "sku_id": sku_id,
                 "name": sku["name"],
+                "price": sku.get("price"),
+                "cost_price": sku.get("cost_price"),
                 "daily_sales": sku["daily_sales"],
                 "stock": sku["stock"],
                 "in_transit": sku["in_transit"],
@@ -43,6 +47,7 @@ class ERPAdapter:
                 "review_snippets": sku["review_snippets"],
                 "prior_week_total_units": sku["prior_week_total_units"],
                 "prior_month_total_units": sku["prior_month_total_units"],
+                "price_history": sku.get("price_history"),
             })
         return items
 
@@ -105,5 +110,28 @@ class ERPAdapter:
             "sku_id": sku_id,
             "name": sku["name"],
             "return_rate": sku["return_rate"],
-            "status": "正常" if sku["return_rate"] < 0.1 else "偏高",
+            "status": "正常" if sku["return_rate"] < high_return_fraction() else "偏高",
+        }
+
+    def get_price_history(self, sku_id: str, days: int = 30) -> Dict:
+        """查询 SKU 价格-销量历史。
+
+        返回近 N 天的每日记录，含 date / price / daily_sales 字段。
+        用于定价弹性分析和 LLM 智能定价上下文。
+        """
+        if sku_id not in self.data_source.skus:
+            return {"error": f"SKU {sku_id} 不存在"}
+
+        sku = self.data_source.skus[sku_id]
+        history = sku.get("price_history") or []
+
+        # 按请求天数截取
+        if days and len(history) > days:
+            history = history[-days:]
+
+        return {
+            "sku_id": sku_id,
+            "name": sku["name"],
+            "days": len(history),
+            "records": history,
         }

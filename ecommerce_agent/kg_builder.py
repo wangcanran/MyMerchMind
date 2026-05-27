@@ -6,7 +6,7 @@ import asyncio
 import json
 import os
 from collections import Counter
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Dict, Optional
 from datetime import datetime
 from pathlib import Path
 
@@ -36,6 +36,8 @@ except ModuleNotFoundError:
         _openai_base = _lc.base_url.rstrip("/")
     except Exception:
         _openai_key = (os.environ.get("LLM_API_KEY") or os.environ.get("OPENAI_API_KEY") or "").strip()
+        if _openai_key.casefold().startswith("bearer "):
+            _openai_key = _openai_key[7:].strip()
         _openai_model = os.environ.get("LLM_MODEL", "gpt-4o-mini")
         _openai_base = (
             os.environ.get("LLM_BASE_URL")
@@ -62,51 +64,9 @@ except ModuleNotFoundError:
         embedding_model=(
             (os.environ.get("LIGHTRAG_EMBED_MODEL") or "").strip() or "text-embedding-3-small"
         ),
+        lightrag_skip_other_entities_in_graph=False,
+        lightrag_isolate_other_entity_edges_in_graph=True,
     )
-
-
-def resolve_lightrag_embedding_config(
-    llm_key: str,
-    llm_base: Optional[str],
-) -> Tuple[str, str, str, bool]:
-    """
-    LightRAG 嵌入所用 OpenAI 兼容接口（可与抽取/问答用的 LLM 不同网关）。
-
-    若配置了 ``embedding_api_key`` + ``embedding_base_url``（或环境变量
-    ``LIGHTRAG_EMBED_API_KEY`` + ``LIGHTRAG_EMBED_BASE_URL``），则仅嵌入请求发往该地址
-    （例如 4zapi）；聊天仍由 ``_llm_config()`` 决定。
-
-    未配置独立嵌入时：沿用旧逻辑——优先 ``openai_api_key``；否则与 LLM 共用一对 key/base。
-
-    Returns:
-        (api_key, base_url, embed_model, dedicated_gateway)
-    """
-    s = settings
-    key = (
-        (getattr(s, "embedding_api_key", None) or "").strip()
-        or (os.environ.get("LIGHTRAG_EMBED_API_KEY") or "").strip()
-        or (os.environ.get("LIGHTRAG_EMBEDDING_API_KEY") or "").strip()
-    )
-    base = (
-        (getattr(s, "embedding_base_url", None) or "").strip()
-        or (os.environ.get("LIGHTRAG_EMBED_BASE_URL") or "").strip()
-        or (os.environ.get("LIGHTRAG_EMBEDDING_BASE_URL") or "").strip()
-    )
-    model = (
-        (getattr(s, "embedding_model", None) or "").strip()
-        or (os.environ.get("LIGHTRAG_EMBED_MODEL") or "").strip()
-        or "text-embedding-3-small"
-    )
-
-    if key and base:
-        return key, base.rstrip("/"), model, True
-
-    oa = (getattr(s, "openai_api_key", None) or "").strip()
-    if oa:
-        ob = getattr(s, "openai_base_url", None) or llm_base or ""
-        return oa, str(ob).rstrip("/"), model, False
-
-    return llm_key, (llm_base or "").rstrip("/"), model, False
 
 
 def _coerce_int_like(v: Any, default: int = 0) -> int:
@@ -155,37 +115,6 @@ def engagement_sentence_for_kg_doc(liked: Any, collected: Any) -> str:
     else:
         tier = "互动热度一般"
     return f"{tier}（帖级赞藏为相对档位，非精确数；运营统计请以原始 JSON 为准）。\n\n"
-
-
-def _cap_openai_nonstream_max_tokens(kwargs: Dict[str, Any]) -> None:
-    """
-    部分 OpenAI 兼容网关（如 Gitee AI）要求：非流式请求若 max_tokens > 4096 则必须 stream=true。
-
-    LightRAG 在关键词抽取等路径可能不显式传 max_tokens，底层会使用较大默认值从而触发 400。
-    在非 stream 模式下将输出上限钳制到 4096（可用 LLM_MAX_OUTPUT_TOKENS / LIGHTRAG_LLM_MAX_TOKENS 调小，仍不超过 4096）。
-    """
-    if kwargs.get("stream"):
-        return
-    try:
-        raw = int(
-            os.environ.get(
-                "LIGHTRAG_LLM_MAX_TOKENS",
-                os.environ.get("LLM_MAX_OUTPUT_TOKENS", "4096"),
-            )
-        )
-    except ValueError:
-        raw = 4096
-    cap = max(1, min(raw, 4096))
-    for key in ("max_tokens", "max_completion_tokens"):
-        if key not in kwargs or kwargs[key] is None:
-            continue
-        try:
-            v = int(kwargs[key])
-            kwargs[key] = max(1, min(v, 4096))
-        except (TypeError, ValueError):
-            kwargs.pop(key, None)
-    if kwargs.get("max_tokens") is None and kwargs.get("max_completion_tokens") is None:
-        kwargs["max_tokens"] = cap
 
 
 class ClothingKnowledgeGraph:
@@ -293,14 +222,32 @@ class ClothingKnowledgeGraph:
         print("正在初始化知识图谱...", flush=True)
 
         llm_name, llm_key, llm_base = self._llm_config()
-        emb_key, emb_base, emb_model, emb_dedicated = resolve_lightrag_embedding_config(
-            llm_key, llm_base
+        # 嵌入：优先环境 ``LIGHTRAG_EMBED_BASE_URL`` + ``LIGHTRAG_EMBED_API_KEY``（与 .env / settings 对齐）
+        emb_key = (
+            (getattr(settings, "embedding_api_key", None) or "").strip()
+            or (os.environ.get("LIGHTRAG_EMBED_API_KEY") or "").strip()
         )
-        if emb_dedicated:
+        emb_base_raw = (
+            (getattr(settings, "embedding_base_url", None) or "").strip()
+            or (os.environ.get("LIGHTRAG_EMBED_BASE_URL") or "").strip()
+        )
+        emb_model = (
+            (getattr(settings, "embedding_model", None) or "").strip()
+            or (os.environ.get("LIGHTRAG_EMBED_MODEL") or "").strip()
+            or "text-embedding-3-small"
+        )
+        if emb_key and emb_base_raw:
+            emb_base = emb_base_raw.rstrip("/")
             print(
                 f"嵌入使用独立网关: {emb_base}（模型 {emb_model}）；抽取/问答 LLM 仍为 {llm_name}。",
                 flush=True,
             )
+        elif settings.openai_api_key:
+            emb_key = settings.openai_api_key
+            emb_base = (settings.openai_base_url or "").strip().rstrip("/")
+        else:
+            emb_key = llm_key
+            emb_base = (llm_base or "").strip().rstrip("/")
 
         emb_timeout = int(getattr(settings, "embedding_timeout_sec", 180))
         emb_max_async = int(getattr(settings, "embedding_func_max_async", 4))
@@ -311,7 +258,7 @@ class ClothingKnowledgeGraph:
                 texts,
                 model=emb_model,
                 api_key=emb_key,
-                base_url=emb_base,
+                base_url=emb_base or None,
                 client_configs={"timeout": float(emb_timeout)},
             )
 
@@ -325,7 +272,6 @@ class ClothingKnowledgeGraph:
             **kwargs: Any,
         ) -> str:
             kwargs.pop("hashing_kv", None)
-            _cap_openai_nonstream_max_tokens(kwargs)
             api_key = kwargs.pop("api_key", llm_key)
             base_url = kwargs.pop("base_url", llm_base)
             timeout = kwargs.pop("timeout", None)
@@ -1308,11 +1254,55 @@ class ClothingKnowledgeGraph:
         question = f"针对{temp_range}的温度，推荐合适的服装品类、材质选择和搭配方案。"
         return await self.query(question, mode="hybrid")
 
+    async def _shutdown_lightrag_priority_workers(self) -> None:
+        """关闭 LightRAG 为 embedding / LLM 挂的 ``priority_limit_async_func_call`` 队列与 worker。
+
+        ``finalize_storages`` 不会调用这些池子的 ``shutdown()``；若在 ``asyncio.run`` 内
+        只 finalize 存储随即 ``loop.close()``，worker 仍挂起，后续会出现
+        ``Task was destroyed but it is pending``、``Event loop is closed``。
+        """
+        rag = self.rag
+        if rag is None:
+            return
+        pairs: List[tuple[str, Any]] = []
+        emb = getattr(rag, "embedding_func", None)
+        inner = getattr(emb, "func", None) if emb is not None else None
+        if inner is not None:
+            pairs.append(("Embedding func", inner))
+        llm_fn = getattr(rag, "llm_model_func", None)
+        if llm_fn is not None:
+            pairs.append(("LLM func", llm_fn))
+        for label, fn in pairs:
+            shutdown = getattr(fn, "shutdown", None)
+            if not callable(shutdown):
+                continue
+            try:
+                await shutdown()
+            except Exception as exc:
+                print(f"[kg] {label} 并发池 shutdown（尽力而为）: {exc}", flush=True)
+
     async def finalize(self):
-        """清理资源"""
-        if self.rag:
+        """清理资源。
+
+        LightRAG 在 ``shared_storage`` 里按进程缓存 ``asyncio.Lock``，锁会绑定到**创建时**
+        的事件循环。编排里常见 ``asyncio.run`` / ``analyze_sync`` 每次新建并关闭循环；
+        若不在此释放全局共享状态，下一次在新循环上查询会出现
+        ``Lock ... is bound to a different event loop``。
+        """
+        if not self.rag:
+            return
+        try:
             await self.rag.finalize_storages()
-            print("知识图谱已关闭")
+            await self._shutdown_lightrag_priority_workers()
+        finally:
+            try:
+                from lightrag.kg.shared_storage import finalize_share_data
+
+                finalize_share_data()
+            except Exception as exc:
+                print(f"[kg] LightRAG finalize_share_data（尽力而为）: {exc}", flush=True)
+            self.rag = None
+            print("知识图谱已关闭", flush=True)
 
 
 async def build_kg_from_json(json_file: str, working_dir: str = "kg_storage"):

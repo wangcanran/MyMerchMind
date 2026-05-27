@@ -1,11 +1,11 @@
-"""模拟社媒趋势数据源"""
+"""演示用趋势词数据源（仅供选品降级等内部逻辑，不作为真实社媒展示）。"""
 from datetime import datetime, timedelta
 import random
 from typing import Dict, List, Optional
 
 
 class MockTrendsData:
-    """模拟小红书/抖音热门标签数据"""
+    """演示用随机趋势词（仅内部/选品降级；不当作真实社媒数据展示）。"""
 
     def __init__(self, seed: Optional[int] = None):
         self._rng = random.Random(seed)
@@ -25,7 +25,7 @@ class MockTrendsData:
         for i, keyword in enumerate(trend_keywords):
             trends.append({
                 "keyword": keyword,
-                "platform": self._rng.choice(["小红书", "抖音"]),
+                "platform": "mock",
                 "heat_score": self._rng.randint(5000, 50000),
                 "growth_rate": round(self._rng.uniform(-0.1, 0.5), 2),
                 "timestamp": (base_time - timedelta(hours=i)).isoformat(),

@@ -1,0 +1,14 @@
+# Core agent dependencies
+httpx>=0.27.0
+python-dotenv>=1.0.0
+
+# LLM integration (OpenAI-compatible API)
+openai>=1.0.0
+
+# Knowledge graph (LightRAG vendored, but needs these at runtime)
+lightrag-hku>=1.0.0
+json_repair>=0.25.0
+pipmaster>=1.0.0
+
+# Data processing
+PyYAML>=6.0.0

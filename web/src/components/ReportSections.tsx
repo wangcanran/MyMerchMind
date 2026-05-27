@@ -31,17 +31,48 @@ function PriorityPill({ priority }: { priority?: string }) {
 
 export function ActionsPanel({ report }: { report: AgentReport }) {
   const items = report.actions ?? []
+  const matrix = report.actions_display
   return (
     <section className="card card--actions">
       <h2 className="card-title">行动清单</h2>
       {items.length === 0 ? (
         <Empty>暂无行动建议</Empty>
       ) : (
-        <ol className="actions-list">
-          {items.map((a, i) => (
-            <li key={i}>{a}</li>
-          ))}
-        </ol>
+        <>
+          {matrix?.note && <p className="muted" style={{ marginBottom: '0.65rem' }}>{matrix.note}</p>}
+          {matrix?.rows?.length ? (
+            <div className="data-table-wrap" style={{ marginBottom: '1rem' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>优先级</th>
+                    <th>负责</th>
+                    <th>动作（节选）</th>
+                    <th>建议完成</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matrix.rows.slice(0, 40).map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.tier}</td>
+                      <td>{r.owner}</td>
+                      <td style={{ maxWidth: 420 }}>{r.action}</td>
+                      <td className="tabular">{r.due}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+          <p className="muted" style={{ marginBottom: '0.5rem', fontSize: '0.88rem' }}>
+            以下为完整原文顺序（JSON <code>actions</code> 与矩阵可对照）。
+          </p>
+          <ol className="actions-list">
+            {items.map((a, i) => (
+              <li key={i}>{a}</li>
+            ))}
+          </ol>
+        </>
       )}
     </section>
   )
@@ -61,12 +92,6 @@ export function KpiStrip({ report }: { report: AgentReport }) {
           <div className="kpi-label">平均退货率</div>
           <div className="kpi-value kpi-value--risk tabular">
             {s.avg_return_rate_pct.toFixed(2)}%
-          </div>
-        </div>
-        <div className="kpi">
-          <div className="kpi-label">当前最热趋势</div>
-          <div className="kpi-value tabular" style={{ fontSize: '1rem' }}>
-            {s.top_trend}
           </div>
         </div>
       </div>
@@ -100,8 +125,8 @@ export function ContextStrip({ report }: { report: AgentReport }) {
       <p className="muted">
         日期 <strong>{c.as_of || '—'}</strong> · 种子{' '}
         <span className="tabular">{c.seed}</span> · SKU{' '}
-        <span className="tabular">{c.sku_count}</span> · 趋势{' '}
-        <span className="tabular">{c.trend_count}</span> · Top{' '}
+        <span className="tabular">{c.sku_count}</span>
+        {' · Top '}
         <span className="tabular">{c.top_n}</span>
         {c.llm_enabled !== undefined && (
           <>
@@ -109,11 +134,33 @@ export function ContextStrip({ report }: { report: AgentReport }) {
             · LLM {c.llm_enabled ? '开启' : '关闭'}
           </>
         )}
+        {typeof c.target_gross_margin === 'number' &&
+          Number.isFinite(c.target_gross_margin) && (
+            <>
+              {' '}
+              · 企划目标毛利率{' '}
+              <span className="tabular">
+                {(c.target_gross_margin * 100).toFixed(0)}%
+              </span>
+            </>
+          )}
       </p>
       {c.llm_notice && (
         <p className="muted" style={{ marginTop: '0.35rem' }}>
           {c.llm_notice}
         </p>
+      )}
+      {c.reporting_rules && Object.keys(c.reporting_rules).length > 0 && (
+        <details className="muted" style={{ marginTop: '0.5rem' }}>
+          <summary>数据一致性口径（SKU / 现价 / 分段）</summary>
+          <ul style={{ margin: '0.35rem 0 0', paddingLeft: '1.1rem', fontSize: '0.88rem' }}>
+            {Object.entries(c.reporting_rules).map(([k, v]) => (
+              <li key={k}>
+                <strong>{k}</strong>：{v}
+              </li>
+            ))}
+          </ul>
+        </details>
       )}
     </section>
   )
@@ -134,14 +181,22 @@ export function ProductSelectionBlock({ report }: { report: AgentReport }) {
               {ps.criteria ? JSON.stringify(ps.criteria) : '—'}
             </span>
           </p>
+          {typeof ps.requirements_preview === 'string' && ps.requirements_preview.trim() && (
+            <details className="muted" style={{ marginTop: '0.35rem' }}>
+              <summary>需求原文（节选）</summary>
+              <pre style={{ whiteSpace: 'pre-wrap', marginTop: '0.35rem', fontSize: '0.85rem' }}>
+                {ps.requirements_preview}
+              </pre>
+            </details>
+          )}
           <p className="muted">
             建议品类（Top）：{(ps.suggested_categories ?? []).join('、') || '—'}
           </p>
           {ps.recommendation &&
             typeof ps.recommendation.cross_dimension_summary === 'string' && (
-              <p>
+              <p style={{ whiteSpace: 'pre-wrap' }}>
                 <strong>结论摘要：</strong>
-                {String(ps.recommendation.cross_dimension_summary).slice(0, 160)}
+                {String(ps.recommendation.cross_dimension_summary)}
               </p>
             )}
           {typeof ps.recommendation?.confidence_score === 'number' && (
@@ -150,9 +205,165 @@ export function ProductSelectionBlock({ report }: { report: AgentReport }) {
               {ps.data_source ?? '—'}
             </p>
           )}
+          {typeof ps.selection_note === 'string' && ps.selection_note.trim() && (
+            <p className="muted" style={{ marginTop: '0.5rem' }}>
+              <strong>说明：</strong>
+              {ps.selection_note}
+            </p>
+          )}
           {ps.error && <p className="err">选品：{ps.error}</p>}
           {!ps.error && ps.llm_error && <p className="err">LLM：{ps.llm_error}</p>}
         </>
+      )}
+    </section>
+  )
+}
+
+function fmtMoney(n: number | null | undefined): string {
+  if (n == null || Number.isNaN(Number(n))) return '—'
+  return `¥${Number(n).toFixed(2)}`
+}
+
+function intelNum(intel: Record<string, unknown> | undefined, key: string): number | null {
+  if (!intel) return null
+  const v = intel[key]
+  if (typeof v === 'number' && !Number.isNaN(v)) return v
+  return null
+}
+
+function intelStr(intel: Record<string, unknown> | undefined, key: string): string | null {
+  if (!intel) return null
+  const v = intel[key]
+  if (typeof v === 'string' && v.trim()) return v
+  return null
+}
+
+/** 后端 ``entries[].intel`` 为 DynamicPricing 整包；价带等落在 ``market_intel``。 */
+function planningIntelPayload(
+  intel: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (!intel) return undefined
+  const nested = intel.market_intel
+  if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+    return nested as Record<string, unknown>
+  }
+  return intel
+}
+
+export function NewProductPlanningBlock({ report }: { report: AgentReport }) {
+  const ps = report.product_selection
+  const npp = ps.new_product_planning
+  const entries = npp?.entries ?? []
+  const items = npp?.items ?? []
+  if (ps.skipped || !npp) return null
+  if (!entries.length && !items.length && !(npp.note && npp.note.trim())) {
+    return null
+  }
+
+  return (
+    <section className="card card--selection">
+      <h2 className="card-title">新品企划（M3 批准后 · 市场情报）</h2>
+      {npp.note && (
+        <p className="muted" style={{ marginBottom: '0.75rem' }}>
+          {npp.note}
+        </p>
+      )}
+      {items.length > 0 && (
+        <>
+          <h3 style={{ marginTop: '0.35rem' }}>企划 SKU / 方向</h3>
+          <ul className="actions-list">
+            {items.map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      {entries.length > 0 && (
+        <>
+          <h3 style={{ marginTop: '0.75rem' }}>企划条目与竞品心智</h3>
+          <ul className="actions-list" style={{ listStyle: 'none', paddingLeft: 0 }}>
+            {entries.map((e, i) => {
+              const rawIntel = e.intel as Record<string, unknown> | undefined
+              const mi = planningIntelPayload(rawIntel)
+              const band = intelStr(mi, 'reference_band')
+              const sweet = intelNum(mi, 'sweet_spot')
+              const median = intelNum(mi, 'median')
+              const ceiling = intelNum(mi, 'implied_cost_ceiling')
+              const disc = intelStr(mi, 'disclaimer')
+              const sweetNote = intelStr(mi, 'sweet_vs_band_note')
+              const reasoning =
+                typeof rawIntel?.reasoning === 'string' && rawIntel.reasoning.trim()
+                  ? rawIntel.reasoning.trim()
+                  : null
+              const summary = rawIntel?.competitor_summary as
+                | { sample_count?: number }
+                | undefined
+              const sampleCount =
+                typeof summary?.sample_count === 'number' ? summary.sample_count : null
+              return (
+                <li
+                  key={i}
+                  style={{
+                    border: '1px solid var(--border, #e5e7eb)',
+                    borderRadius: 8,
+                    padding: '0.65rem 0.75rem',
+                    marginBottom: '0.5rem',
+                  }}
+                >
+                  <strong>{e.title ?? `条目 ${i + 1}`}</strong>
+                  {e.competitor_search_query && (
+                    <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.9rem' }}>
+                      竞品检索：<code>{e.competitor_search_query}</code>
+                    </p>
+                  )}
+                  <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.88rem' }}>
+                    {sampleCount != null && (
+                      <>
+                        竞品样本 <span className="tabular">{sampleCount}</span>
+                        {(band || sweet != null || median != null || ceiling != null) && ' · '}
+                      </>
+                    )}
+                    {band && <>参考价带 {band}</>}
+                    {band && (sweet != null || median != null) && ' · '}
+                    {sweet != null && <>甜点 {fmtMoney(sweet)}</>}
+                    {sweet != null && median != null && ' · '}
+                    {median != null && <>中位 {fmtMoney(median)}</>}
+                    {(sweet != null || median != null || band) && ceiling != null && ' · '}
+                    {ceiling != null && <>示意成本上限 {fmtMoney(ceiling)}</>}
+                    {!band &&
+                      sweet == null &&
+                      median == null &&
+                      ceiling == null &&
+                      (sampleCount == null || sampleCount === 0) && (
+                        <>暂无结构化价带（可能无竞品样本或爬虫未返回价格）</>
+                      )}
+                  </p>
+                  {disc && (
+                    <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.82rem' }}>
+                      {disc}
+                    </p>
+                  )}
+                  {sweetNote && (
+                    <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.82rem' }}>
+                      {sweetNote}
+                    </p>
+                  )}
+                  {reasoning && (
+                    <p className="muted" style={{ margin: '0.35rem 0 0', fontSize: '0.82rem' }}>
+                      {reasoning}
+                    </p>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </>
+      )}
+      {npp.criteria_snapshot && Object.keys(npp.criteria_snapshot).length > 0 && (
+        <p className="muted" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+          <strong>条件快照：</strong>
+          {JSON.stringify(npp.criteria_snapshot)}
+        </p>
       )}
     </section>
   )
@@ -178,7 +389,18 @@ export function CategoryManagementBlock({ report }: { report: AgentReport }) {
               品类数 <span className="tabular">{summary.category_count ?? 0}</span> · SKU 总数{' '}
               <span className="tabular">{summary.sku_total ?? 0}</span> · Top 品类{' '}
               <span className="tabular">{summary.top_category_by_sales ?? '—'}</span>
+              {typeof summary.top_category_daily_sales === 'number' &&
+                summary.top_category_daily_sales > 0 && (
+                  <>
+                    {' '}
+                    · 主力品类日销合计{' '}
+                    <span className="tabular">{summary.top_category_daily_sales}</span> 件
+                  </>
+                )}
             </p>
+          )}
+          {cm.m2_m3_bridge_note && (
+            <p style={{ marginTop: '0.5rem', fontSize: '0.95rem' }}>{cm.m2_m3_bridge_note}</p>
           )}
 
           <h3 style={{ marginTop: '0.75rem' }}>新品评估</h3>
@@ -238,59 +460,92 @@ export function CategoryManagementBlock({ report }: { report: AgentReport }) {
 
 export function PricingBlock({ report }: { report: AgentReport }) {
   const p = report.pricing
-  const rows = p.pricing_rows ?? []
-  const checklist = p.execution_checklist ?? []
+  const rows = p.pricing_suggestions ?? []
+  const s = p.summary
+  const orphan = s?.m2_suggestions_not_in_erp_skus ?? []
   return (
     <section className="card">
-      <h2 className="card-title">定价（M3.1）</h2>
+      <h2 className="card-title">定价（M3.1 · 动态竞品）</h2>
       {p.skipped ? (
         <Empty>暂无定价输出</Empty>
       ) : (
         <>
-          <h3>定价建议</h3>
+          {s && (
+            <p className="muted" style={{ marginBottom: '0.75rem' }}>
+              在架 SKU <span className="tabular">{s.total_skus ?? '—'}</span> · 有竞品样本{' '}
+              <span className="tabular">{s.skus_with_competitor_data ?? '—'}</span> · 数据源{' '}
+              {s.data_source ?? '—'}
+              {s.competitor_search_suffix && (
+                <>
+                  <br />
+                  企划检索后缀：<code>{s.competitor_search_suffix}</code>
+                  {typeof s.skus_with_planning_suffix === 'number' && (
+                    <>
+                      {' '}
+                      （命中{' '}
+                      <span className="tabular">{s.skus_with_planning_suffix}</span> 条）
+                    </>
+                  )}
+                </>
+              )}
+            </p>
+          )}
+          <h3>在架 SKU 定价建议</h3>
           {rows.length === 0 ? (
-            <Empty>暂无定价输出</Empty>
+            <Empty>暂无定价建议行</Empty>
           ) : (
             <div className="data-table-wrap">
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>品类</th>
-                    <th>决策</th>
-                    <th>竞品价带</th>
-                    <th>建议标价</th>
-                    <th>模式</th>
+                    <th>SKU</th>
+                    <th>名称</th>
+                    <th>角色</th>
+                    <th>现价</th>
+                    <th>建议价</th>
+                    <th>策略</th>
+                    <th>竞品样本</th>
+                    <th>甜点</th>
+                    <th>企划后缀</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.slice(0, 8).map((r, i) => (
-                    <tr key={`${r.category ?? 'cat'}-${i}`}>
-                      <td>{r.category ?? '—'}</td>
-                      <td>{r.decision ?? '—'}</td>
-                      <td className="tabular">{r.competitor_price_band ?? '—'}</td>
+                  {rows.slice(0, 30).map((r, i) => (
+                    <tr key={`${r.sku_id ?? 'sku'}-${i}`}>
+                      <td className="tabular">{r.sku_id ?? '—'}</td>
+                      <td>{r.name ?? '—'}</td>
+                      <td><span className={`tag tag--${r.role ?? 'profit'}`}>{r.role ?? '—'}</span></td>
+                      <td className="tabular">{fmtMoney(r.current_price ?? undefined)}</td>
+                      <td className="tabular">{fmtMoney(r.suggested_price)}{r.step_plan ? ' *' : ''}</td>
+                      <td>{r.strategy ?? '—'}</td>
                       <td className="tabular">
-                        {typeof r.suggested_price === 'number' ? `¥${r.suggested_price}` : '—'}
+                        {typeof r.competitor_summary?.sample_count === 'number'
+                          ? r.competitor_summary.sample_count
+                          : '—'}
                       </td>
-                      <td className="tabular">{r.pricing_mode ?? '—'}</td>
+                      <td className="tabular">
+                        {fmtMoney(r.competitor_summary?.sweet_spot ?? r.market_intel?.sweet_spot ?? undefined)}
+                      </td>
+                      <td className="tabular">
+                        {r.competitor_search_used_planning_suffix ? '是' : '否'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-
-          {checklist.length > 0 && (
-            <>
-              <h3 style={{ marginTop: '0.75rem' }}>执行清单</h3>
-              <ol className="actions-list">
-                {checklist.slice(0, 6).map((x, i) => (
-                  <li key={i}>{x}</li>
-                ))}
-              </ol>
-            </>
+          {rows.length > 30 && (
+            <p className="muted" style={{ marginTop: '0.35rem' }}>
+              仅展示前 30 条，完整列表见 Markdown / JSON。
+            </p>
           )}
-
-          {p.llm_error && <p className="err">LLM：{p.llm_error}</p>}
+          {orphan.length > 0 && (
+            <p className="muted" style={{ marginTop: '0.75rem', fontSize: '0.9rem' }}>
+              <strong>M3 批准上新（与新品企划同源）：</strong>
+              {orphan.join('、')}
+            </p>
+          )}
         </>
       )}
     </section>
@@ -308,33 +563,6 @@ export function SalesTables({ report }: { report: AgentReport }) {
       <SkuTable rows={sr.lagging_skus} />
       <h3 style={{ marginTop: '1rem' }}>高退货风险 SKU</h3>
       <SkuTable rows={sr.high_return_skus} variant="risk" />
-      <h3 style={{ marginTop: '1rem' }}>趋势关注</h3>
-      {sr.trend_focus?.length ? (
-        <div className="data-table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>关键词</th>
-                <th>平台</th>
-                <th>热度</th>
-                <th>增长 %</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sr.trend_focus.map((t, i) => (
-                <tr key={i}>
-                  <td>{t.keyword}</td>
-                  <td>{t.platform}</td>
-                  <td className="tabular">{t.heat_score}</td>
-                  <td className="tabular">{t.growth_rate_pct}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <Empty>暂无趋势数据</Empty>
-      )}
     </section>
   )
 }
@@ -349,10 +577,12 @@ function SkuTable({
     daily_sales: number
     stock: number
     return_rate_pct: number
+    list_price?: number | null
   }[]
   variant?: 'growth' | 'risk'
 }) {
   if (!rows?.length) return <Empty>暂无数据</Empty>
+  const showPrice = rows.some((r) => typeof r.list_price === 'number' && Number.isFinite(r.list_price))
   return (
     <div className="data-table-wrap">
       <table className="data-table">
@@ -360,6 +590,7 @@ function SkuTable({
           <tr>
             <th>SKU</th>
             <th>名称</th>
+            {showPrice && <th>ERP现价</th>}
             <th>日销</th>
             <th>库存</th>
             <th>退货率</th>
@@ -379,6 +610,13 @@ function SkuTable({
             >
               <td className="tabular">{r.sku_id}</td>
               <td>{r.name}</td>
+              {showPrice && (
+                <td className="tabular">
+                  {typeof r.list_price === 'number' && Number.isFinite(r.list_price)
+                    ? fmtMoney(r.list_price)
+                    : '—'}
+                </td>
+              )}
               <td className="tabular">{r.daily_sales}</td>
               <td className="tabular">{r.stock}</td>
               <td className="tabular">{r.return_rate_pct.toFixed(1)}%</td>
@@ -824,13 +1062,35 @@ export function ReplenishmentBlock({ report }: { report: AgentReport }) {
 
 export function MemoryBlock({ report }: { report: AgentReport }) {
   const m = report.memory_snapshot
+  const exps = m.retrieved_experiences || []
   return (
     <section className="card">
-      <h2 className="card-title">避雷记忆（M4.3）</h2>
-      <p>
-        活跃避雷条数：{' '}
-        <span className="tabular">{m.active_feedback_count}</span> · 选品命中 SKU
-        数：<span className="tabular">{m.product_selection_hits}</span>
+      <h2 className="card-title">经验与记忆（M4.3）</h2>
+      {exps.length > 0 && (
+        <div className="retrieved-experiences">
+          <h3>本次命中的经验（{exps.length} 条）</h3>
+          {exps.map((exp, idx) => (
+            <div key={exp.experience_id} className="retrieved-exp-card">
+              <div className="retrieved-exp-card__header">
+                <span className="retrieved-exp-card__ref">[{idx + 1}]</span>
+                <span className={`confidence confidence--${exp.confidence}`}>{exp.confidence}</span>
+                <span className="retrieved-exp-card__title">{exp.title}</span>
+                <span className="retrieved-exp-card__score">匹配度 {exp._score}/10</span>
+              </div>
+              {exp.narrative && (
+                <p className="retrieved-exp-card__narrative">{exp.narrative}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      {exps.length === 0 && (
+        <p className="muted" style={{ marginTop: '0.5rem' }}>本次未命中任何经验。积累更多策略反馈后，经验会自动参与决策。</p>
+      )}
+      <p className="muted" style={{ marginTop: '0.5rem', fontSize: '0.85em' }}>
+        经验库{m.experience_store ? ` ${m.experience_store.active} 条生效` : ''}
+        {m.active_feedback_count > 0 && ` · 避雷记忆 ${m.active_feedback_count} 条`}
+        {m.product_selection_hits > 0 && ` · 选品命中 ${m.product_selection_hits} SKU`}
       </p>
     </section>
   )

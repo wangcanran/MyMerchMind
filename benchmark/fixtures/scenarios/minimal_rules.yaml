@@ -58,7 +58,7 @@ erp_skus:
 
 trends:
   - keyword: "美拉德风格测试"
-    platform: "小红书"
+    platform: "mock"
     heat_score: 20000
     growth_rate: 0.3
     timestamp: "2026-01-01T00:00:00"

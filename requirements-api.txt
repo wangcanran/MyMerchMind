@@ -1,3 +1,9 @@
 # Web API for dashboard (install alongside the stdlib-only agent core)
 fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
+
+# kg_builder → LightRAG：选品 _skip_kg=false 时会加载 lightrag（openai / operate 等）
+# 需 json_repair + pipmaster。注意：pipmaster 依赖的 ascii-colors 新版本使用 PEP604 类型注解，
+# 在 Python 3.9 下可能仍无法 import；走图谱时请使用 Python 3.10+，或将 API 用 3.12 解释器启动。
+json_repair>=0.25.0
+pipmaster>=1.0.0

@@ -9,10 +9,11 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from ..llm import load_llm_config, prompts
 from ..llm.client import LLMClientError, OpenAICompatChatClient
@@ -24,6 +25,8 @@ from .kg_engagement_lookup import (
 )
 
 _ROOT = Path(__file__).resolve().parent.parent
+# LightRAG 工作目录：与仓库内 ``ecommerce_agent/kg_storage_v2`` 对齐（不依赖进程 cwd）
+DEFAULT_KG_WORKING_DIR = str((_ROOT / "kg_storage_v2").resolve())
 
 try:
     from config import settings as _RUNTIME_SETTINGS
@@ -119,6 +122,15 @@ class ProductSelectionAgent:
         return None
 
     @staticmethod
+    def _loosen_json_chars(s: str) -> str:
+        """缓解模型常见非标准 JSON：智能引号、零宽字符等。"""
+        t = s.replace("\ufeff", "")
+        t = re.sub(r"[\u200b-\u200d\u2060]", "", t)
+        t = t.replace("\u201c", '"').replace("\u201d", '"')
+        t = t.replace("\u2018", "'").replace("\u2019", "'")
+        return t
+
+    @staticmethod
     def _parse_llm_json(text: str) -> dict:
         raw = (text or "").strip()
         candidates: List[str] = []
@@ -145,14 +157,35 @@ class ProductSelectionAgent:
             if cand in seen:
                 continue
             seen.add(cand)
-            try:
-                data = json.loads(cand)
-                if isinstance(data, dict):
-                    return data
-                last_err = ValueError("JSON 根节点必须是对象")
-            except (json.JSONDecodeError, TypeError, ValueError) as e:
-                last_err = e
-                continue
+            variants = (cand, ProductSelectionAgent._loosen_json_chars(cand))
+            for v in variants:
+                if v in seen:
+                    continue
+                seen.add(v)
+                try:
+                    data = json.loads(v)
+                    if isinstance(data, dict):
+                        return data
+                    last_err = ValueError("JSON 根节点必须是对象")
+                except (json.JSONDecodeError, TypeError, ValueError) as e:
+                    last_err = e
+                    continue
+        # 可选：json_repair 能修常见尾部逗号、未转义换行等（与 LightRAG operate 一致）
+        try:
+            import json_repair  # type: ignore[import-not-found, import-untyped]
+
+            for cand in candidates:
+                for v in (cand, ProductSelectionAgent._loosen_json_chars(cand)):
+                    if v in seen:
+                        continue
+                    try:
+                        data = json_repair.loads(v)
+                        if isinstance(data, dict):
+                            return data
+                    except (TypeError, ValueError, Exception):
+                        continue
+        except ImportError:
+            pass
         if last_err:
             raise last_err
         raise ValueError("无法从模型输出中解析 JSON 对象")
@@ -162,18 +195,23 @@ class ProductSelectionAgent:
         try:
             return parse_json_object(text)
         except (ValueError, TypeError, json.JSONDecodeError):
-            return ProductSelectionAgent._parse_llm_json(text)
+            try:
+                return parse_json_object(
+                    ProductSelectionAgent._loosen_json_chars(text or "")
+                )
+            except (ValueError, TypeError, json.JSONDecodeError):
+                return ProductSelectionAgent._parse_llm_json(text)
 
     def __init__(
         self,
-        kg_working_dir: str = "ecommerce_agent/kg_storage_v2",
+        kg_working_dir: str = DEFAULT_KG_WORKING_DIR,
         *,
         include_engagement: Optional[bool] = None,
         llm_client: Optional[OpenAICompatChatClient] = None,
     ):
         """
         Args:
-            kg_working_dir: LightRAG 工作目录
+            kg_working_dir: LightRAG 工作目录（默认 ``ecommerce_agent/kg_storage_v2`` 的绝对路径）
             include_engagement: 是否使用赞藏回溯；None 时用 ``config`` 或环境变量
             llm_client: 可选；不传则在图谱选品调用时按 ``load_llm_config()`` 自动构造
         """
@@ -249,42 +287,72 @@ class ProductSelectionAgent:
             loop.close()
 
     async def analyze_async(self, criteria: dict) -> dict:
-        skip_kg = bool(criteria.get("_skip_kg")) or not Path(self.kg_working_dir).exists()
-        kg_insights: Dict[str, Any] = {}
-        if not skip_kg:
-            await self._ensure_kg_initialized()
-            kg_insights = await self._query_knowledge_graph(criteria)
-        user_prompt = self._build_analysis_prompt(criteria, kg_insights)
-
+        """跑完选品后务必 ``finalize``，否则在 ``asyncio.run``/``loop.close`` 时
+        LightRAG 嵌入 worker 与 ``shared_storage`` 锁释放协程仍挂起，会触发
+        ``Task was destroyed but it is pending`` / ``coroutine was never awaited``。
+        """
         try:
-            raw = self._chat_selection(user_prompt)
-        except LLMClientError as e:
-            return {
-                "criteria": criteria,
-                "error": str(e),
-                "kg_insights": kg_insights,
-                "timestamp": datetime.now().isoformat(),
-                "llm_error": str(e),
-            }
+            skip_kg = bool(criteria.get("_skip_kg")) or not Path(self.kg_working_dir).exists()
+            kg_insights: Dict[str, Any] = {}
+            kg_degraded = False
+            if not skip_kg:
+                try:
+                    await self._ensure_kg_initialized()
+                    kg_insights = await self._query_knowledge_graph(criteria)
+                except Exception as exc:  # noqa: BLE001 — 图谱/嵌入任一步失败时不应拖死整段选品
+                    kg_degraded = True
+                    err = str(exc).strip()
+                    if len(err) > 800:
+                        err = err[:800] + "…"
+                    kg_insights = {
+                        "kg_pipeline_error": (
+                            "知识图谱或嵌入链路异常，已**跳过图谱摘录**并仅用选品条件继续调用 LLM；"
+                            "结论置信度可能下降，建议核对下方错误信息后重试或临时在条件中加 `_skip_kg: true`。"
+                        ),
+                        "kg_pipeline_error_detail": err,
+                    }
+            user_prompt = self._build_analysis_prompt(criteria, kg_insights)
 
-        try:
-            recommendation = self._parse_llm_response(raw)
-            return {
-                "criteria": criteria,
-                "recommendation": recommendation,
-                "kg_insights": kg_insights,
-                "timestamp": datetime.now().isoformat(),
-                "llm_error": None,
-            }
-        except (json.JSONDecodeError, ValueError, TypeError) as e:
-            return {
-                "criteria": criteria,
-                "error": "Failed to parse recommendation",
-                "raw_response": raw,
-                "kg_insights": kg_insights,
-                "timestamp": datetime.now().isoformat(),
-                "llm_error": str(e),
-            }
+            try:
+                raw = self._chat_selection(user_prompt)
+            except LLMClientError as e:
+                out: Dict[str, Any] = {
+                    "criteria": criteria,
+                    "error": str(e),
+                    "kg_insights": kg_insights,
+                    "timestamp": datetime.now().isoformat(),
+                    "llm_error": str(e),
+                }
+                if kg_degraded:
+                    out["kg_degraded"] = True
+                return out
+
+            try:
+                recommendation = self._parse_llm_response(raw)
+                out = {
+                    "criteria": criteria,
+                    "recommendation": recommendation,
+                    "kg_insights": kg_insights,
+                    "timestamp": datetime.now().isoformat(),
+                    "llm_error": None,
+                }
+                if kg_degraded:
+                    out["kg_degraded"] = True
+                return out
+            except (json.JSONDecodeError, ValueError, TypeError) as e:
+                out = {
+                    "criteria": criteria,
+                    "error": "Failed to parse recommendation",
+                    "raw_response": raw,
+                    "kg_insights": kg_insights,
+                    "timestamp": datetime.now().isoformat(),
+                    "llm_error": str(e),
+                }
+                if kg_degraded:
+                    out["kg_degraded"] = True
+                return out
+        finally:
+            await self.finalize()
 
     async def _query_knowledge_graph(self, criteria: dict) -> dict:
         insights: Dict[str, Any] = {}
@@ -537,7 +605,7 @@ class ProductSelectionAgent:
         }
         return result
 
-    async def analyze_from_requirements_path(self, path: str | Path) -> dict:
+    async def analyze_from_requirements_path(self, path: Union[str, Path]) -> dict:
         p = Path(path)
         text = p.read_text(encoding="utf-8-sig")
         return await self.analyze_from_requirements_text(
@@ -575,7 +643,15 @@ def parse_selection_criteria_from_requirements_text(
         ],
         temperature=0.0,
     )
-    data = ProductSelectionAgent._parse_llm_json(raw)
+    try:
+        data = ProductSelectionAgent._parse_llm_response(raw)
+    except ValueError as e:
+        excerpt = (raw or "").strip()[:2000]
+        raise ValueError(
+            "无法从模型输出中解析需求条件 JSON。请检查模型是否只输出一个 JSON 对象，"
+            "或网关是否截断回复。节选如下：\n"
+            f"{excerpt}"
+        ) from e
     if not isinstance(data, dict):
         raise ValueError("需求解析结果不是 JSON 对象")
     return data
@@ -585,7 +661,7 @@ def write_selection_report_to_txt(
     selection_result: dict,
     *,
     comparison_result: Optional[dict] = None,
-    output_path: Optional[str | Path] = None,
+    output_path: Optional[Union[str, Path]] = None,
     kg_insights_max_chars: int = 520,
 ) -> Path:
     root = _ROOT
@@ -595,7 +671,9 @@ def write_selection_report_to_txt(
     else:
         path = Path(output_path)
         if not path.is_absolute():
-            path = root / path
+            # 与常见 CLI 习惯一致：相对路径相对 cwd（仓库根下 ``ecommerce_agent/data/...`` 等），
+            # 勿拼到包目录 _ROOT，否则会出现 ``ecommerce_agent/ecommerce_agent/data/...``。
+            path = Path.cwd() / path
     path.parent.mkdir(parents=True, exist_ok=True)
 
     lines: List[str] = []

@@ -49,11 +49,30 @@
 
 ```
 ├── README.md                 # 本文件
+├── web/                      # 前端看板（Vite + React），API 见 web 内说明
+├── ecommerce_agent/          # Python 包与编排 CLI
 ├── docs/
 │   ├── ROADMAP.md            # 完整路线图（含所有 Milestone 与 Issue）
 │   ├── milestones/           # 各里程碑详细说明
 │   └── issues/               # 各 Issue 的详细描述与验收标准
 └── .gitignore
+```
+
+## 前端看板（`web/`）
+
+在仓库根目录执行（会先使用根目录 `package.json` 转发到 `web`）：
+
+```bash
+npm run install:web   # 首次或依赖变更时安装 web 依赖
+npm run dev           # 开发服务器
+```
+
+也可直接进入子目录：
+
+```bash
+cd web
+npm install
+npm run dev
 ```
 
 ## 如何开始

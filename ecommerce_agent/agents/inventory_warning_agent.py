@@ -3,6 +3,7 @@ import json
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
+from ..config.return_rate_thresholds import high_return_fraction, high_return_rate_pct
 from ..llm import prompts
 from ..llm.client import LLMClientError, OpenAICompatChatClient
 from ..llm.json_util import parse_json_object
@@ -115,6 +116,7 @@ class InventoryWarningAgent:
                         "current_stock": current_stock,
                         "in_transit": in_transit,
                         "stock_position": stock_position,
+                        "cost_price": float(item.get("cost_price") or 0),
                         "coverage_days": round(current_coverage_days, 1),
                         "total_coverage_days": round(total_coverage_days, 1),
                         "coverage_gap_days": coverage_gap_days,
@@ -301,7 +303,7 @@ class InventoryWarningAgent:
             safety_days += 0.2
         if channel_share >= 0.55:
             safety_days += 0.8
-        if return_rate >= 0.12:
+        if return_rate >= high_return_fraction():
             safety_days += 0.4
         if conversion_rate >= 0.02:
             safety_days += 0.3
@@ -342,7 +344,7 @@ class InventoryWarningAgent:
             score += min(max(total_coverage_days - overstock_days, 0.0) * 1.2, 42.0)
         score += min(max(stock_age_days - 45, 0) * 0.65, 24.0)
         score += min(max(0.012 - conversion_rate, 0.0) * 2200.0, 16.0)
-        score += min(return_rate * 100.0, 12.0)
+        score += min(return_rate * 100.0, max(high_return_rate_pct(), 1.0))
         score += min(stock_position / 30.0, 8.0)
         if daily_sales <= 1 and stock_position > 0:
             score += 8.0
@@ -402,7 +404,7 @@ class InventoryWarningAgent:
             return "直播间秒杀", "几乎无自然动销，先用短促快速回笼库存"
         if in_transit > 0 and stock > 200:
             return "冻结补货并跨仓调拨", "在途与现货同时偏高，先停新增再平衡库位"
-        if return_rate >= 0.12:
+        if return_rate >= high_return_fraction():
             return "先做质检/详情页修正再去化", "高退货风险下直接放量促销会放大售后损失"
         if stock_age_days >= 75 or pressure_score >= 78:
             return "阶梯满减清仓", "库龄与库存压力都高，适合按节奏快速出清"

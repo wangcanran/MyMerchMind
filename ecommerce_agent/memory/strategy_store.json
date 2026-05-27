@@ -1,0 +1,1294 @@
+{
+  "strategies": [
+    {
+      "strategy_id": "strat-277336f50e31",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "pricing",
+      "description": "定价建议：咖啡色外套 现售¥319，建议调至¥228（高退货率压价+淡季）",
+      "status": "feedback_received",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "accepted",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "feedback_received",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": {
+        "feedback_id": "fb-4c4fc23ac5a4",
+        "outcome": "poor",
+        "reason": "涤纶面料通勤场景显廉价感，降价后退货率依然14%，问题不在价格而在材质",
+        "kpi_data": {
+          "actual_sales": 12,
+          "actual_return_rate": 0.14
+        },
+        "submitted_at": "2026-05-23T18:32:28"
+      }
+    },
+    {
+      "strategy_id": "strat-35a361ff0d76",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "pricing",
+      "description": "定价建议：黑色T恤 现售¥89，建议调至¥51（跟随市场甜点+淡季）",
+      "status": "feedback_received",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "accepted",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "feedback_received",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": {
+        "feedback_id": "fb-3bf23d927919",
+        "outcome": "good",
+        "reason": "降价后日销从45提升到72，转化率翻倍，退货率降至8%",
+        "kpi_data": {
+          "actual_sales": 72,
+          "actual_return_rate": 0.08
+        },
+        "submitted_at": "2026-05-23T18:32:28"
+      }
+    },
+    {
+      "strategy_id": "strat-f40f8c53229f",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "pricing",
+      "description": "定价建议：白色连衣裙 现售¥239，建议调至¥158（高退货率压价）",
+      "status": "feedback_received",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "accepted",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "feedback_received",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": {
+        "feedback_id": "fb-1f2ac45514b4",
+        "outcome": "average",
+        "reason": "销量小幅提升但退货率没变，可能是尺码问题不是价格问题",
+        "kpi_data": {
+          "actual_sales": 25,
+          "actual_return_rate": 0.13
+        },
+        "submitted_at": "2026-05-23T18:32:28"
+      }
+    },
+    {
+      "strategy_id": "strat-1442be131f64",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "selection",
+      "description": "新品企划：针织开衫 — 参考价带¥64-143；甜点锚点约¥68",
+      "status": "feedback_received",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "accepted",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "feedback_received",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": {
+        "feedback_id": "fb-cc636f533109",
+        "outcome": "good",
+        "reason": "韩系针织开衫首周销量破2000件，退货率仅3%，春季叠穿需求强",
+        "kpi_data": {
+          "actual_sales": 2000,
+          "actual_return_rate": 0.03
+        },
+        "submitted_at": "2026-05-23T18:32:28"
+      }
+    },
+    {
+      "strategy_id": "strat-e15b1f6fa3f2",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "selection",
+      "description": "新品企划：圆领卫衣 — 参考价带¥60-148；甜点锚点约¥108",
+      "status": "accepted",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "accepted",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-df52ad1e11bd",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "replenishment",
+      "description": "补货优先级最高：SKU1010（深棕色T恤），当前仅可售 4.8 天，建议补 209 件",
+      "status": "feedback_received",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "accepted",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "feedback_received",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": {
+        "feedback_id": "fb-ed101e8b73f1",
+        "outcome": "good",
+        "reason": "及时补货避免了断货，补货到位后日销稳定在45件",
+        "kpi_data": {
+          "actual_sales": 45
+        },
+        "submitted_at": "2026-05-23T18:32:28"
+      }
+    },
+    {
+      "strategy_id": "strat-3e9bceb3a7ac",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "replenishment",
+      "description": "补货计算：SKU1012 建议订货约 356 件（EOQ 930）",
+      "status": "accepted",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "accepted",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-e0dc663c9d10",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "selection",
+      "description": "品类优先级：连衣裙 贡献最高日销（116），建议优先补位上新与资源投入",
+      "status": "feedback_received",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "accepted",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "feedback_received",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": {
+        "feedback_id": "fb-89770069eafd",
+        "outcome": "good",
+        "reason": "连衣裙品类5月整体GMV增长22%，新款上架3天即进入畅销榜",
+        "kpi_data": {},
+        "submitted_at": "2026-05-23T18:32:28"
+      }
+    },
+    {
+      "strategy_id": "strat-1562903f6f5e",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "inventory",
+      "description": "去化优先级最高：SKU1002（黑色裤子），库存覆盖 79.7 天，建议冻结补货并跨仓调拨",
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-c1f0642a2916",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "slow_moving",
+      "description": "滞销清理优先：SKU1009（米色连衣裙）— 跨仓调拨",
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-0897ae228767",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "other",
+      "description": "加大 SKU1009（米色连衣裙）的曝光与备货，当前日均销量 48 件",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-58aab38b19f8",
+      "run_id": "run-20260501-seed42",
+      "as_of": "2026-05-01",
+      "module": "category",
+      "description": "优先处理 SKU1007（咖啡色外套）退货问题，当前退货率 15.0%",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T18:32:28"
+        }
+      ],
+      "created_at": "2026-05-01",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-2dc3e111b96e",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "replenishment",
+      "description": "补货优先级最高：SKU2006（白色薄款针织开衫），当前仅可售 1.5 天，建议补 266 件。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-8e52c4d62779",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "other",
+      "description": "跨团队先执行：采购 在 1 天内完成 replenish_now（SKU2006）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-b1d865217d6a",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "pricing",
+      "description": "高退货处置：SKU2002 咖啡色涤纶通勤外套 · 退货率 14.0% — 暂停加量推广/投流，联动质检与详情页复核，必要时调价或下架测款。",
+      "status": "accepted",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        },
+        {
+          "status": "accepted",
+          "at": "2026-05-26T10:51:12"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-a60fb682515f",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "pricing",
+      "description": "高退货处置：SKU2008 奶咖色涤纶半身裙 · 退货率 12.0% — 暂停加量推广/投流，联动质检与详情页复核，必要时调价或下架测款。",
+      "status": "accepted",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        },
+        {
+          "status": "accepted",
+          "at": "2026-05-26T11:01:24"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-d1e0d66facb6",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "category",
+      "description": "优先处理 SKU2002（咖啡色涤纶通勤外套）退货问题，当前退货率 14.0%。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-7e1ba739826b",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "pricing",
+      "description": "定价建议：SKU2002 咖啡色涤纶通勤外套 现售 ¥319，建议调至 ¥189（LLM定价）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-bdf01ef77f7e",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "pricing",
+      "description": "定价建议：SKU2003 雾蓝色亚麻衬衫 现售 ¥189，建议调至 ¥129（LLM定价）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-951b834455b2",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "pricing",
+      "description": "定价建议：SKU2008 奶咖色涤纶半身裙 现售 ¥159，建议调至 ¥109（LLM定价）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-3dadaefa7fee",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "pricing",
+      "description": "定价建议：SKU2009 莫兰迪绿吊带连衣裙 现售 ¥219，建议调至 ¥149（LLM定价）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-5ad33cbbd040",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "pricing",
+      "description": "定价建议：SKU2012 淡紫色雪纺衬衫 现售 ¥169，建议调至 ¥109（LLM定价）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-fa9c952e0232",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "inventory",
+      "description": "【LLM】当前五款SKU均触发补货阈值，系统基于EOQ模型与动态目标库存生成建议。白色薄款针织开衫、黑色冰丝阔腿裤及米白色冰丝防晒衫处于Critical/High优先级，需优先锁定产能；建议量已综合经济批量、缺口覆盖与3天交期缓冲，并约束在order-up-to上限内。淡紫色雪纺衬衫与浅卡其色醋酸连衣裙风险较低，可适度延后或合并采购以摊薄固定成本。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-60f2a3a1eff4",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "pricing",
+      "description": "品类动作建议：对 外套 启动 reduce_stock_risk，原因：覆盖天数偏高，建议结合促销/调价/渠道分配做去化并暂停补货。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-55a464bca857",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "inventory",
+      "description": "滞销清理优先：SKU2002（咖啡色涤纶通勤外套）— 满减促销，库存深且转化弱，建议阶梯满减带动出清",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-bf5f8fc85139",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "inventory",
+      "description": "补货计算：SKU2006 建议订货约 461 件（EOQ 1144 / 目标库存 761）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-be609dd18478",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "inventory",
+      "description": "【LLM】SKU2008（奶咖色涤纶半身裙，退货率12.0%）同步排查色准与面料描述，库存充足（340件）但动销偏低，建议优先优化详情页视觉呈现再观察转化",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-d3308ef56da8",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "inventory",
+      "description": "【LLM】TOP5 SKU库存与在途充足，白色薄款针织开衫（SKU2006）在途400件即将入库，建议提前锁定老钱风/美拉德风格内容排期，确保到货即销",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-3e948759f3c1",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "category",
+      "description": "【LLM】直播渠道占比过半（50.74%），周环比持平，可测试「通勤风」关键词（增速约26%）切入职场场景，提升私域（22.28%）联动转化率",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-89726252f7fc",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "category",
+      "description": "【LLM】针对「老钱风」「美拉德风格」热度双高（增速均约34%），在直播与私域渠道追加相关穿搭内容，联动TOP2 SKU（白色薄款针织开衫、黑色冰丝阔腿裤）做场景化搭配",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-dab767cae999",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "pricing",
+      "description": "【LLM】高退货SKU2002（咖啡色涤纶通勤外套，退货率14.0%）已标记「色差」问题，暂停加量推广并联动质检复核实物与详情页色卡一致性，必要时调价或申请下架测款",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-b514dd928330",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "other",
+      "description": "加大 SKU2006（白色薄款针织开衫）的曝光与备货，当前日均销量 65 件。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-eeba6588b177",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "selection",
+      "description": "品类优先级：其他 贡献最高日销（128），建议优先补位上新与资源投入。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-f0a9d5ac147e",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "other",
+      "description": "增长较快趋势词：美拉德风格、通勤风，适合小步测款与内容投放试点。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-952077180c01",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "other",
+      "description": "外部趋势高热词（演示数据）：老钱风、辣妹风、多巴胺穿搭、慵懒风、奶油风，可与在架结构对照做主题运营。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-85a57fc2bbf8",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "category",
+      "description": "渠道侧重：live 占比 50.7%，周环比约 +0.0%。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-ce2897b0c575",
+      "run_id": "run-2026-05-23-seed42",
+      "as_of": "2026-05-23",
+      "module": "selection",
+      "description": "退货语义高频：color_gap（1 次），建议联动选品与质检。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-23T19:40:46"
+        }
+      ],
+      "created_at": "2026-05-23",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-9f25520438d0",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "pricing",
+      "description": "高退货处置：SKU2002 咖啡色涤纶通勤外套 · 退货率 14.0% — 暂停加量推广/投流，联动质检与详情页复核，必要时调价或下架测款。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-d1affd1a4e01",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "pricing",
+      "description": "高退货处置：SKU2008 奶咖色涤纶半身裙 · 退货率 12.0% — 暂停加量推广/投流，联动质检与详情页复核，必要时调价或下架测款。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-3a743c9d6051",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "pricing",
+      "description": "定价建议：SKU2003 雾蓝色亚麻衬衫 现售 ¥189，建议调至 ¥160（淡季弹性利润+库存优化）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-382ed8566e12",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "pricing",
+      "description": "定价建议：SKU2008 奶咖色涤纶半身裙 现售 ¥159，建议调至 ¥129（弹性清仓·竞品卡位）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-6cbad58e26e0",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "pricing",
+      "description": "定价建议：SKU2010 深棕色纯棉厚T恤 现售 ¥89，建议调至 ¥69（清仓冲量·击穿竞品甜蜜点）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-9ec33373d4f7",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "pricing",
+      "description": "定价建议：SKU2012 淡紫色雪纺衬衫 现售 ¥169，建议调至 ¥143（淡季弹性卡位·竞品甜蜜点渗透）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-30e70ae90aff",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "inventory",
+      "description": "【LLM】当前5款SKU均触发补货，其中SKU2006（白色薄款针织开衫）为critical优先级，库存位置495已低于补货点663，覆盖缺口4.1天，建议采购461件；SKU2004与SKU2011为high优先级，分别需补344件、256件；SKU2012与SKU2005优先级较低。EOQ计算已引入1.05季节系数修正，但SKU2005因持有成本较高（28.4），EOQ仅398件，建议订单量97件以贴近目标库存308。所有建议订单量均已约束在order-up-to区间内，并预留交期缓冲。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-073f6db3260d",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "pricing",
+      "description": "品类动作建议：对 外套 启动 reduce_stock_risk，原因：覆盖天数偏高，建议结合促销/调价/渠道分配做去化并暂停补货。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-2452fbea3340",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "inventory",
+      "description": "滞销清理优先：SKU2002（咖啡色涤纶通勤外套）— 满减促销，库存深且转化弱，建议阶梯满减带动出清",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-40e67ead1230",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "inventory",
+      "description": "【LLM】TOP5畅销款库存充足且在途充足，维持当前推广力度，关注SKU2003（雾蓝色亚麻衬衫）退货率5.0%的波动情况",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-d96e7bc5a57f",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "category",
+      "description": "【LLM】直播渠道占比过半但增速停滞：排查流量结构与转化效率，测试新主播或时段组合以激活增长",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-e213db26bda5",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "pricing",
+      "description": "【LLM】针对SKU2002（咖啡色涤纶通勤外套）：暂停加量推广，联动质检复核实物色差，同步优化详情页色彩呈现，必要时调价或申请下架测款",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-e65e7b949d97",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "other",
+      "description": "加大 SKU2006（白色薄款针织开衫）的曝光与备货，当前日均销量 65 件。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-898028cb00f3",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "selection",
+      "description": "品类优先级：裤子 贡献最高日销（89），建议优先补位上新与资源投入。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-ae7f8528d0d6",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "category",
+      "description": "渠道侧重：live 占比 50.7%，周环比约 +0.0%。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-c0b92200da79",
+      "run_id": "run-2026-05-24-seed42",
+      "as_of": "2026-05-24",
+      "module": "selection",
+      "description": "退货语义高频：color_gap（1 次），建议联动选品与质检。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-24T00:32:48"
+        }
+      ],
+      "created_at": "2026-05-24",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-6ec256080f29",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "pricing",
+      "description": "定价建议：SKU2002 咖啡色涤纶通勤外套 现售 ¥319，建议调至 ¥239（清仓止损·材质认知纠偏）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-de6801533893",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "pricing",
+      "description": "定价建议：SKU2003 雾蓝色亚麻衬衫 现售 ¥189，建议调至 ¥160（弹性利润款·淡季分步下探）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-34ea4715afc3",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "pricing",
+      "description": "定价建议：SKU2008 奶咖色涤纶半身裙 现售 ¥159，建议调至 ¥129（清仓冲量·弹性加速）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-04998dfb0939",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "pricing",
+      "description": "定价建议：SKU2010 深棕色纯棉厚T恤 现售 ¥89，建议调至 ¥69（清仓冲量·甜点价卡位）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-2024c6af3988",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "pricing",
+      "description": "定价建议：SKU2012 淡紫色雪纺衬衫 现售 ¥169，建议调至 ¥143（淡季弹性卡位·竞品甜蜜点渗透）。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-bc6524eb8dc5",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "inventory",
+      "description": "【LLM】当前5款SKU均触发补货，其中SKU2006（白色薄款针织开衫）为critical优先级，库存位置495已低于补货点663，覆盖缺口4.1天，建议采购461件；SKU2004与SKU2011为high优先级，分别需补344件、256件；SKU2012与SKU2005优先级较低。EOQ计算已引入1.05季节系数修正，但SKU2005因持有成本较高（28.4），EOQ仅398件，建议订单量97件以贴近目标库存308。所有建议订单量均已约束在order-up-to区间内，并预留交期缓冲。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-3ebc5c57737d",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "pricing",
+      "description": "品类动作建议：对 外套 启动 reduce_stock_risk，原因：覆盖天数偏高，建议结合促销/调价/渠道分配做去化并暂停补货。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-ec2e42b21e96",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "selection",
+      "description": "新品企划（市场情报·非锁价）：A字吊带连衣裙（内搭型） — 暂无有效竞品价样本。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-2c69c71e9e19",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "selection",
+      "description": "新品企划（市场情报·非锁价）：夏季薄款针织开衫 — 暂无有效竞品价样本。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-fb3f3def42a2",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "selection",
+      "description": "新品企划（市场情报·非锁价）：天丝/亚麻混纺衬衫 — 暂无有效竞品价样本。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-d77621b02e2b",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "selection",
+      "description": "新品企划（市场情报·非锁价）：天丝/亚麻混纺衬衫裙 — 暂无有效竞品价样本。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-bf79c2e882a8",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "selection",
+      "description": "新品企划（市场情报·非锁价）：高腰垂感阔腿裤 — 暂无有效竞品价样本。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-ffe3d022fc1d",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "inventory",
+      "description": "滞销清理优先：SKU2002（咖啡色涤纶通勤外套）— 满减促销，库存深且转化弱，建议阶梯满减带动出清",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-75b6da720bfc",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "inventory",
+      "description": "【LLM】SKU2001、SKU2003库存深度较高（420/310件）但日销偏低，建议通过私域精准推送或套装组合提升动销",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-45021dbf636c",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "inventory",
+      "description": "【LLM】TOP3爆款（SKU2006、SKU2004、SKU2011）在途库存充足（400/300/250件），可适度加大直播渠道排期以巩固50.74%渠道占比",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-8c38a4d938a1",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "pricing",
+      "description": "【LLM】针对SKU2002（退货率14.0%）及SKU2008（退货率12.0%）：暂停加量推广，联动质检复核实物与详情页色差呈现，必要时调价或申请下架测款",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-184dae1e38f8",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "other",
+      "description": "加大 SKU2006（白色薄款针织开衫）的曝光与备货，当前日均销量 65 件。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-1b8d7017f83d",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "selection",
+      "description": "品类优先级：裤子 贡献最高日销（89），建议优先补位上新与资源投入。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-078ab3adb0f8",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "category",
+      "description": "渠道侧重：live 占比 50.7%，周环比约 +0.0%。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    },
+    {
+      "strategy_id": "strat-742a62a95ad9",
+      "run_id": "run-2026-05-26-seed42",
+      "as_of": "2026-05-26",
+      "module": "selection",
+      "description": "退货语义高频：color_gap（1 次），建议联动选品与质检。",
+      "status": "pending",
+      "status_history": [
+        {
+          "status": "pending",
+          "at": "2026-05-26T10:59:39"
+        }
+      ],
+      "created_at": "2026-05-26",
+      "feedback": null
+    }
+  ]
+}

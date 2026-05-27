@@ -8,6 +8,10 @@ export interface ReportContext {
   top_n: number
   llm_enabled?: boolean
   llm_notice?: string | null
+  /** 企划 market_intel 用目标毛利率（归一后 0~1，如 0.45） */
+  target_gross_margin?: number
+  /** 编排注入：SKU 展示、现价快照、分段规则说明 */
+  reporting_rules?: Record<string, string>
 }
 
 export interface SkuRowView {
@@ -16,12 +20,15 @@ export interface SkuRowView {
   daily_sales: number
   stock: number
   return_rate_pct: number
+  /** ERP 快照现价（元），与定价模块 current_price 同源口径 */
+  list_price?: number | null
+  in_transit?: number
 }
 
 export interface SalesSummary {
   total_daily_sales: number
   avg_return_rate_pct: number
-  top_trend: string
+  top_trend?: string
 }
 
 export interface TrendFocusRow {
@@ -58,13 +65,21 @@ export interface SalesReview {
   top_skus: SkuRowView[]
   lagging_skus: SkuRowView[]
   high_return_skus: SkuRowView[]
-  trend_focus: TrendFocusRow[]
+  trend_focus?: TrendFocusRow[]
   channel_dashboard: ChannelDashboard
   return_semantics: ReturnSemantics
   recommendations: string[]
+  /** 各榜单分段定义，避免畅销/滞销语义打架 */
+  segmentation_glossary?: Record<string, string>
   data_source?: string
   llm_executive_brief?: { executive_summary: string; action_bullets: string[] } | null
   llm_error?: string | null
+}
+
+export interface NewProductPlanningEntry {
+  title?: string
+  competitor_search_query?: string
+  intel?: Record<string, unknown>
 }
 
 export interface ProductSelection {
@@ -75,12 +90,27 @@ export interface ProductSelection {
   data_source?: string
   llm_error?: string | null
   error?: string | null
+  selection_note?: string | null
+  /** 需求正文节选（自然语言 / Markdown 入参时由后端带回） */
+  requirements_preview?: string | null
+  requirements_file?: string | null
+  /** 新品企划：M3 ``approve_new`` 后的 ``market_intel``，与后端 ``new_product_planning`` 一致 */
+  new_product_planning?: {
+    items?: string[]
+    note?: string
+    criteria_snapshot?: Record<string, unknown> | null
+    entries?: NewProductPlanningEntry[]
+    /** ``category_management_approve_new`` | ``category_management_no_approve_new`` | ``category_management_skipped`` */
+    planning_item_source?: string
+  }
 }
 
 export interface CategoryManagementSummary {
   category_count?: number
   sku_total?: number
   top_category_by_sales?: string
+  /** 销售贡献最大品类的日销合计（件），与 M3 叙事衔接用 */
+  top_category_daily_sales?: number
 }
 
 export interface CategoryNewCandidate {
@@ -91,6 +121,8 @@ export interface CategoryNewCandidate {
 
 export interface CategoryManagement {
   skipped?: boolean
+  /** 编排器写入：M2 建议 vs 在架 Top 品类的阅读口径 */
+  m2_m3_bridge_note?: string
   category_summary?: CategoryManagementSummary
   decisions?: {
     evaluate_new?: {
@@ -117,27 +149,61 @@ export interface CategoryManagement {
   llm_error?: string | null
 }
 
-export interface PricingRow {
-  category?: string
-  decision?: string
-  budget_share_pct?: number
-  competitor_price_band?: string | null
-  suggested_price?: number | null
-  pricing_mode?: string
-  rationale?: string
+export interface MarketIntel {
+  reference_band?: string | null
+  sweet_spot?: number | null
+  median?: number | null
+  implied_cost_ceiling?: number | null
+  assumed_target_gross_margin?: number
+  disclaimer?: string | null
+  anchor_band_tension?: string
+  sweet_vs_band_note?: string | null
+}
+
+export interface CompetitorSummary {
+  sample_count?: number
+  median?: number
+  p25?: number
+  p75?: number
+  sweet_spot?: number
+}
+
+export interface PricingSuggestionRow {
+  sku_id?: string
+  name?: string
+  current_price?: number | null
+  cost_price?: number | null
+  suggested_price?: number
+  role?: string
+  elasticity?: number | null
+  optimal_price?: number | null
+  step_plan?: { target_price: number; steps_needed: number; per_step_pct: number; note: string } | null
+  price_position_pct?: number | null
+  strategy?: string
+  pricing_stage?: string
+  competitor_summary?: CompetitorSummary
+  market_intel?: MarketIntel | null
+  competitor_search_query?: string
+  competitor_search_used_planning_suffix?: boolean
+  reasoning?: string
+  exception_explanation_rule?: string | null
+  llm_exception_explanation?: string | null
+}
+
+export interface PricingSummary {
+  total_skus?: number
+  skus_with_competitor_data?: number
+  data_source?: string
+  competitor_search_suffix?: string | null
+  skus_with_planning_suffix?: number
+  /** M3 ``approve_new`` 企划标题，与 ``product_selection.new_product_planning.items`` 同源 */
+  m2_suggestions_not_in_erp_skus?: string[]
 }
 
 export interface Pricing {
   skipped?: boolean
-  summary?: {
-    category_count?: number
-    priced_category_preview?: string[]
-    data_source?: string
-  }
-  pricing_rows?: PricingRow[]
-  execution_checklist?: string[]
-  recommendations?: string[]
-  llm_error?: string | null
+  summary?: PricingSummary
+  pricing_suggestions?: PricingSuggestionRow[]
 }
 
 export interface LowStockAlert {
@@ -309,9 +375,21 @@ export interface InventoryManagement {
 export interface MemorySnapshot {
   active_feedback_count: number
   product_selection_hits: number
+  experience_store?: { draft: number; active: number; archived: number }
+  retrieved_experience_count?: number
+  retrieved_experiences?: Array<{
+    experience_id: string
+    title: string
+    narrative?: string
+    confidence: string
+    _score: number
+  }>
+  new_draft_count?: number
 }
 
 export interface AgentReport {
+  /** 与本次 JSON 同一趟编排生成的 Markdown；优先用于预览/下载，勿再单独请求 /api/report/markdown */
+  markdown?: string
   context: ReportContext
   product_selection: ProductSelection
   category_management: CategoryManagement
@@ -323,6 +401,12 @@ export interface AgentReport {
   inventory_management: InventoryManagement
   memory_snapshot: MemorySnapshot
   actions: string[]
+  /** 行动清单优先级矩阵（与 Markdown ACTIONS 表同源） */
+  actions_display?: {
+    as_of?: string
+    note?: string
+    rows: { tier: string; owner: string; action: string; due: string }[]
+  }
 }
 
 export interface ReportParams {
@@ -332,4 +416,11 @@ export interface ReportParams {
   replenishment_cycle: number
   overstock_days: number
   feedback_memory: string
+  /** 自然语言或 Markdown；非空时 POST /api/report 并走「需求理解 → criteria → 图谱选品」 */
+  selection_requirements?: string
+  /**
+   * 企划「示意成本上限」用目标毛利率：0~1 小数（如 0.45），或 >1 表示百分数（如 40）。
+   * 未设置时由后端默认 0.45。
+   */
+  target_gross_margin?: number
 }

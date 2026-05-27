@@ -24,8 +24,10 @@ pip install -r requirements-api.txt
 职责：
 
 - `GET /api/health` → `{"status":"ok"}`
-- `GET /api/report` → 与 `DemoOrchestrator().run()` 返回的 JSON 一致（查询参数对齐 CLI：`seed`、`top_n`、`as_of`、`replenishment_cycle`、`overstock_days`、`feedback_memory` 可选路径）
-- `GET /api/report/markdown` → `{"markdown": "<与 build_markdown_report 相同>"}`
+- `GET /api/report` → 与 `DemoOrchestrator(..., use_llm=True).run()` 对齐的 JSON（查询参数含 `seed`、`top_n`、`as_of`、`replenishment_cycle`、`overstock_days`、`feedback_memory`、`target_gross_margin`、`use_llm`）。**默认 `use_llm=true`**（前端全链路大模型）；传 `use_llm=false` 可强制纯规则。未配置 `LLM_API_KEY`/`OPENAI_API_KEY` 时仍回退规则，见响应 `context.llm_notice`。**不含**选品正文；长需求请用 `POST /api/report`。
+- `POST /api/report` → JSON 体字段与上相同，另可含 `selection_requirements`（自然语言或 Markdown 字符串）；非空时先 LLM 需求理解再跑图谱选品。体字段 **`use_llm` 默认 `true`**。响应同 GET，并含 `markdown`。
+- `GET /api/report/markdown` → `{"markdown": "<与 build_markdown_report 相同>"}`（无选品正文；支持查询参数 **`use_llm`，默认 true**）
+- `POST /api/report/markdown` → 同上，体与 `POST /api/report` 一致，仅返回 `markdown`
 
 **实现要点**：复用 [`build_markdown_report`](../ecommerce_agent/main.py) 与 [`DemoOrchestrator`](../ecommerce_agent/orchestrator.py)；`as_of` 为空时用 `date.today().isoformat()`；`feedback_memory` 非空时校验文件存在否则 400。
 

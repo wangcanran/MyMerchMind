@@ -23,6 +23,7 @@ def test_orchestrator_structure() -> None:
     assert "inventory_management" in report
     assert "memory_snapshot" in report
     assert "actions" in report
+    assert "actions_display" in report
     assert report["memory_snapshot"]["active_feedback_count"] >= 0
 
 
@@ -63,7 +64,7 @@ def run_demo(output_path: Path) -> str:
     assert result.returncode == 0, stderr_text
     assert "=== DEMO CONTEXT ===" in stdout_text
     assert "=== PRODUCT SELECTION (M2) ===" in stdout_text
-    assert "=== PRICING (M3.1) ===" in stdout_text
+    assert "=== SKU PRICING (M3.1) ===" in stdout_text
     assert "=== SALES REVIEW (P0) ===" in stdout_text
     assert "=== CHANNEL REVIEW (M4.1) ===" in stdout_text
     assert "=== RETURN SEMANTICS (M4.2) ===" in stdout_text

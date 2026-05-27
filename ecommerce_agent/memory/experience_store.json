@@ -1,0 +1,1718 @@
+{
+  "experiences": [
+    {
+      "experience_id": "exp-bebac2ededd6",
+      "status": "active",
+      "title": "无效策略：定价建议：咖啡色外套 现售¥319，建议",
+      "narrative": "【定价策略反馈】定价建议：咖啡色外套 现售¥319，建议调至¥228（高退货率压价+淡季） — 执行结果：效果差。商家反馈：涤纶面料通勤场景显廉价感，降价后退货率依然14%，问题不在价格而在材质。",
+      "search_keys": {
+        "season": "spring",
+        "category": [
+          "外套"
+        ],
+        "price_tier": "200-500",
+        "channel_dominant": "",
+        "return_signal": "elevated",
+        "inventory_signal": "normal",
+        "conversion_signal": "",
+        "tags": {
+          "color": "咖啡色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "strategy_id": "strat-277336f50e31",
+        "run_id": "run-20260501-seed42",
+        "as_of": "2026-05-01",
+        "sku_ids": [],
+        "kpi_snapshot": {
+          "actual_sales": 12,
+          "actual_return_rate": 0.14
+        }
+      },
+      "confidence": "high",
+      "source": "human",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-f1fcb54e7d45",
+      "status": "active",
+      "title": "有效策略：定价建议：黑色T恤 现售¥89，建议调至",
+      "narrative": "【定价策略反馈】定价建议：黑色T恤 现售¥89，建议调至¥51（跟随市场甜点+淡季） — 执行结果：效果好。商家反馈：降价后日销从45提升到72，转化率翻倍，退货率降至8%。",
+      "search_keys": {
+        "season": "spring",
+        "category": [
+          "T恤"
+        ],
+        "price_tier": "0-100",
+        "channel_dominant": "",
+        "return_signal": "normal",
+        "inventory_signal": "normal",
+        "conversion_signal": "",
+        "tags": {
+          "color": "黑色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "strategy_id": "strat-35a361ff0d76",
+        "run_id": "run-20260501-seed42",
+        "as_of": "2026-05-01",
+        "sku_ids": [],
+        "kpi_snapshot": {
+          "actual_sales": 72,
+          "actual_return_rate": 0.08
+        }
+      },
+      "confidence": "high",
+      "source": "human",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-1080bdc8fb16",
+      "status": "active",
+      "title": "策略参考：定价建议：白色连衣裙 现售¥239，建议",
+      "narrative": "【定价策略反馈】定价建议：白色连衣裙 现售¥239，建议调至¥158（高退货率压价） — 执行结果：效果一般。商家反馈：销量小幅提升但退货率没变，可能是尺码问题不是价格问题。",
+      "search_keys": {
+        "season": "spring",
+        "category": [
+          "连衣裙"
+        ],
+        "price_tier": "200-500",
+        "channel_dominant": "",
+        "return_signal": "elevated",
+        "inventory_signal": "normal",
+        "conversion_signal": "",
+        "tags": {
+          "color": "白色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "strategy_id": "strat-f40f8c53229f",
+        "run_id": "run-20260501-seed42",
+        "as_of": "2026-05-01",
+        "sku_ids": [],
+        "kpi_snapshot": {
+          "actual_sales": 25,
+          "actual_return_rate": 0.13
+        }
+      },
+      "confidence": "medium",
+      "source": "human",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-5ca25996bb6b",
+      "status": "active",
+      "title": "有效策略：新品企划：针织开衫 — 参考价带¥64-",
+      "narrative": "【选品策略反馈】新品企划：针织开衫 — 参考价带¥64-143；甜点锚点约¥68 — 执行结果：效果好。商家反馈：韩系针织开衫首周销量破2000件，退货率仅3%，春季叠穿需求强。",
+      "search_keys": {
+        "season": "spring",
+        "category": [
+          "针织",
+          "开衫"
+        ],
+        "price_tier": "100-200",
+        "channel_dominant": "",
+        "return_signal": "normal",
+        "inventory_signal": "normal",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "strategy_id": "strat-1442be131f64",
+        "run_id": "run-20260501-seed42",
+        "as_of": "2026-05-01",
+        "sku_ids": [],
+        "kpi_snapshot": {
+          "actual_sales": 2000,
+          "actual_return_rate": 0.03
+        }
+      },
+      "confidence": "high",
+      "source": "human",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-d1f00d1f00da",
+      "status": "active",
+      "title": "有效策略：补货优先级最高：SKU1010（深棕色T",
+      "narrative": "【补货策略反馈】补货优先级最高：SKU1010（深棕色T恤），当前仅可售 4.8 天，建议补 209 件 — 执行结果：效果好。商家反馈：及时补货避免了断货，补货到位后日销稳定在45件。",
+      "search_keys": {
+        "season": "spring",
+        "category": [
+          "T恤"
+        ],
+        "price_tier": "500+",
+        "channel_dominant": "",
+        "return_signal": "normal",
+        "inventory_signal": "normal",
+        "conversion_signal": "",
+        "tags": {
+          "color": "深棕色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "strategy_id": "strat-df52ad1e11bd",
+        "run_id": "run-20260501-seed42",
+        "as_of": "2026-05-01",
+        "sku_ids": [
+          "SKU1010"
+        ],
+        "kpi_snapshot": {
+          "actual_sales": 45
+        }
+      },
+      "confidence": "high",
+      "source": "human",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-4a64634c09de",
+      "status": "active",
+      "title": "有效策略：品类优先级：连衣裙 贡献最高日销（116",
+      "narrative": "【选品策略反馈】品类优先级：连衣裙 贡献最高日销（116），建议优先补位上新与资源投入 — 执行结果：效果好。商家反馈：连衣裙品类5月整体GMV增长22%，新款上架3天即进入畅销榜。",
+      "search_keys": {
+        "season": "spring",
+        "category": [
+          "连衣裙"
+        ],
+        "price_tier": "100-200",
+        "channel_dominant": "",
+        "return_signal": "normal",
+        "inventory_signal": "normal",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "strategy_id": "strat-e0dc663c9d10",
+        "run_id": "run-20260501-seed42",
+        "as_of": "2026-05-01",
+        "sku_ids": [],
+        "kpi_snapshot": {}
+      },
+      "confidence": "high",
+      "source": "human",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-cd84f4313cc7",
+      "status": "draft",
+      "title": "高退货观测：咖啡色涤纶通勤外套（退货率 14.0%）",
+      "narrative": "SKU SKU2002（咖啡色涤纶通勤外套）在 2026-05-23 报告中退货率为 14.0%，日均销售 9 件，转化率 0.80%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "low",
+        "tags": {
+          "collar": "方领",
+          "material": "天丝",
+          "style": "通勤",
+          "color": "咖啡色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2002"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 9,
+          "return_rate": 0.14,
+          "conversion_rate": 0.008,
+          "stock_age_days": 72,
+          "price": 319
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-1fc2326d391f",
+      "status": "draft",
+      "title": "高退货观测：奶咖色涤纶半身裙（退货率 12.0%）",
+      "narrative": "SKU SKU2008（奶咖色涤纶半身裙）在 2026-05-23 报告中退货率为 12.0%，日均销售 15 件，转化率 1.10%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "aging",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "翻领",
+          "material": "羊毛混纺",
+          "style": "休闲",
+          "color": "白色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2008"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 15,
+          "return_rate": 0.12,
+          "conversion_rate": 0.011,
+          "stock_age_days": 55,
+          "price": 159
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-c7bf04675879",
+      "status": "draft",
+      "title": "高退货观测：深棕色纯棉厚T恤（退货率 8.0%）",
+      "narrative": "SKU SKU2010（深棕色纯棉厚T恤）在 2026-05-23 报告中退货率为 8.0%，日均销售 18 件，转化率 1.30%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "0-100",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "方领",
+          "material": "牛仔",
+          "style": "静奢",
+          "color": "深棕色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2010"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 18,
+          "return_rate": 0.08,
+          "conversion_rate": 0.013,
+          "stock_age_days": 68,
+          "price": 89
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-09ea6b7ba10a",
+      "status": "draft",
+      "title": "滞销观测：咖啡色涤纶通勤外套（库龄 72 天）",
+      "narrative": "SKU SKU2002（咖啡色涤纶通勤外套）在 2026-05-23 报告中库龄 72 天，日均销售 9 件，在库 - 件。具体原因（趋势退热/定价偏高/备货失误等）需结合市场与运营人工判断。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "low",
+        "tags": {
+          "collar": "方领",
+          "material": "天丝",
+          "style": "通勤",
+          "color": "咖啡色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2002"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 9,
+          "return_rate": null,
+          "stock": null,
+          "stock_age_days": 72
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-6a4be6c50c22",
+      "status": "draft",
+      "title": "定价大幅偏差：米白色天丝连衣裙（现 ¥259.0→建议 ¥189.0，偏差 27%）",
+      "narrative": "SKU SKU2001（米白色天丝连衣裙）在 2026-05-23 报告中，规则定价建议从 ¥259.0 调至 ¥189.0（LLM定价），偏差 27%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2001"
+        ],
+        "kpi_snapshot": {
+          "current_price": 259.0,
+          "suggested_price": 189.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 27.0
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-f792d1f4fd8f",
+      "status": "draft",
+      "title": "定价大幅偏差：咖啡色涤纶通勤外套（现 ¥319.0→建议 ¥189.0，偏差 41%）",
+      "narrative": "SKU SKU2002（咖啡色涤纶通勤外套）在 2026-05-23 报告中，规则定价建议从 ¥319.0 调至 ¥189.0（LLM定价），偏差 41%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2002"
+        ],
+        "kpi_snapshot": {
+          "current_price": 319.0,
+          "suggested_price": 189.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 40.8
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-bf9cc848bdc3",
+      "status": "draft",
+      "title": "定价大幅偏差：雾蓝色亚麻衬衫（现 ¥189.0→建议 ¥129.0，偏差 32%）",
+      "narrative": "SKU SKU2003（雾蓝色亚麻衬衫）在 2026-05-23 报告中，规则定价建议从 ¥189.0 调至 ¥129.0（LLM定价），偏差 32%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2003"
+        ],
+        "kpi_snapshot": {
+          "current_price": 189.0,
+          "suggested_price": 129.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 31.7
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-956d375e64f9",
+      "status": "draft",
+      "title": "定价大幅偏差：黑色冰丝阔腿裤（现 ¥149.0→建议 ¥109.0，偏差 27%）",
+      "narrative": "SKU SKU2004（黑色冰丝阔腿裤）在 2026-05-23 报告中，规则定价建议从 ¥149.0 调至 ¥109.0（LLM定价），偏差 27%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2004"
+        ],
+        "kpi_snapshot": {
+          "current_price": 149.0,
+          "suggested_price": 109.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 26.8
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-17793e01d5ec",
+      "status": "draft",
+      "title": "定价大幅偏差：浅卡其色醋酸连衣裙（现 ¥329.0→建议 ¥238.0，偏差 28%）",
+      "narrative": "SKU SKU2005（浅卡其色醋酸连衣裙）在 2026-05-23 报告中，规则定价建议从 ¥329.0 调至 ¥238.0（LLM定价），偏差 28%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2005"
+        ],
+        "kpi_snapshot": {
+          "current_price": 329.0,
+          "suggested_price": 238.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 27.7
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-d78a6312c8a0",
+      "status": "draft",
+      "title": "定价大幅偏差：白色薄款针织开衫（现 ¥129.0→建议 ¥99.0，偏差 23%）",
+      "narrative": "SKU SKU2006（白色薄款针织开衫）在 2026-05-23 报告中，规则定价建议从 ¥129.0 调至 ¥99.0（LLM定价），偏差 23%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2006"
+        ],
+        "kpi_snapshot": {
+          "current_price": 129.0,
+          "suggested_price": 99.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 23.3
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-ba4aa25723c7",
+      "status": "draft",
+      "title": "定价大幅偏差：烟灰色天丝烟管裤（现 ¥199.0→建议 ¥137.0，偏差 31%）",
+      "narrative": "SKU SKU2007（烟灰色天丝烟管裤）在 2026-05-23 报告中，规则定价建议从 ¥199.0 调至 ¥137.0（LLM定价），偏差 31%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2007"
+        ],
+        "kpi_snapshot": {
+          "current_price": 199.0,
+          "suggested_price": 137.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 31.2
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-81b0bd16eb65",
+      "status": "draft",
+      "title": "定价大幅偏差：奶咖色涤纶半身裙（现 ¥159.0→建议 ¥109.0，偏差 31%）",
+      "narrative": "SKU SKU2008（奶咖色涤纶半身裙）在 2026-05-23 报告中，规则定价建议从 ¥159.0 调至 ¥109.0（LLM定价），偏差 31%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2008"
+        ],
+        "kpi_snapshot": {
+          "current_price": 159.0,
+          "suggested_price": 109.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 31.4
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-85ea9fa56ff3",
+      "status": "draft",
+      "title": "定价大幅偏差：莫兰迪绿吊带连衣裙（现 ¥219.0→建议 ¥149.0，偏差 32%）",
+      "narrative": "SKU SKU2009（莫兰迪绿吊带连衣裙）在 2026-05-23 报告中，规则定价建议从 ¥219.0 调至 ¥149.0（LLM定价），偏差 32%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2009"
+        ],
+        "kpi_snapshot": {
+          "current_price": 219.0,
+          "suggested_price": 149.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 32.0
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-cadd903207ed",
+      "status": "draft",
+      "title": "定价大幅偏差：深棕色纯棉厚T恤（现 ¥89.0→建议 ¥69.0，偏差 22%）",
+      "narrative": "SKU SKU2010（深棕色纯棉厚T恤）在 2026-05-23 报告中，规则定价建议从 ¥89.0 调至 ¥69.0（LLM定价），偏差 22%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "0-100",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2010"
+        ],
+        "kpi_snapshot": {
+          "current_price": 89.0,
+          "suggested_price": 69.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 22.5
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-376fae172a4f",
+      "status": "draft",
+      "title": "定价大幅偏差：米白色冰丝防晒衫（现 ¥109.0→建议 ¥79.0，偏差 28%）",
+      "narrative": "SKU SKU2011（米白色冰丝防晒衫）在 2026-05-23 报告中，规则定价建议从 ¥109.0 调至 ¥79.0（LLM定价），偏差 28%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2011"
+        ],
+        "kpi_snapshot": {
+          "current_price": 109.0,
+          "suggested_price": 79.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 27.5
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-f019284ad176",
+      "status": "draft",
+      "title": "定价大幅偏差：淡紫色雪纺衬衫（现 ¥169.0→建议 ¥109.0，偏差 36%）",
+      "narrative": "SKU SKU2012（淡紫色雪纺衬衫）在 2026-05-23 报告中，规则定价建议从 ¥169.0 调至 ¥109.0（LLM定价），偏差 36%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260523-seed42",
+        "as_of": "2026-05-23",
+        "sku_ids": [
+          "SKU2012"
+        ],
+        "kpi_snapshot": {
+          "current_price": 169.0,
+          "suggested_price": 109.0,
+          "strategy": "LLM定价",
+          "price_deviation_pct": 35.5
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-6521afd9d5eb",
+      "status": "draft",
+      "title": "高退货观测：咖啡色外套（退货率 11.0%）",
+      "narrative": "SKU SKU2002（咖啡色外套）在 2026-04-12 报告中退货率为 11.0%，日均销售 9 件，转化率 0.90%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "low",
+        "tags": {
+          "collar": "翻领",
+          "material": "羊毛混纺",
+          "style": "静奢",
+          "color": "咖啡色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260412-seed42",
+        "as_of": "2026-04-12",
+        "sku_ids": [
+          "SKU2002"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 9,
+          "return_rate": 0.11,
+          "conversion_rate": 0.009,
+          "stock_age_days": 72,
+          "price": null
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-13402d5419e0",
+      "status": "draft",
+      "title": "高退货观测：咖啡色裤子（退货率 13.1%）",
+      "narrative": "SKU SKU1005（咖啡色裤子）在 2026-04-06 报告中退货率为 13.1%，日均销售 11 件，转化率 2.80%，主销渠道 private。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "private",
+        "return_signal": "elevated",
+        "inventory_signal": "fresh",
+        "conversion_signal": "high",
+        "tags": {
+          "collar": "翻领",
+          "material": "羊毛混纺",
+          "style": "休闲",
+          "color": "黑色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260406-seed42",
+        "as_of": "2026-04-06",
+        "sku_ids": [
+          "SKU1005"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 11,
+          "return_rate": 0.131,
+          "conversion_rate": 0.028,
+          "stock_age_days": 13,
+          "price": 159
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-5b583df89cd9",
+      "status": "draft",
+      "title": "高退货观测：米色连衣裙（退货率 9.4%）",
+      "narrative": "SKU SKU1008（米色连衣裙）在 2026-04-06 报告中退货率为 9.4%，日均销售 22 件，转化率 1.57%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "V领",
+          "material": "涤纶",
+          "style": "多巴胺",
+          "color": "米色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260406-seed42",
+        "as_of": "2026-04-06",
+        "sku_ids": [
+          "SKU1008"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 22,
+          "return_rate": 0.094,
+          "conversion_rate": 0.0157,
+          "stock_age_days": 80,
+          "price": 159
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-964258804c19",
+      "status": "draft",
+      "title": "高退货观测：白色裤子（退货率 10.7%）",
+      "narrative": "SKU SKU1010（白色裤子）在 2026-04-06 报告中退货率为 10.7%，日均销售 36 件，转化率 1.40%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "aging",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "方领",
+          "material": "牛仔",
+          "style": "美拉德",
+          "color": "深棕色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260406-seed42",
+        "as_of": "2026-04-06",
+        "sku_ids": [
+          "SKU1010"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 36,
+          "return_rate": 0.107,
+          "conversion_rate": 0.014,
+          "stock_age_days": 48,
+          "price": 239
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-ca9c6a1edbda",
+      "status": "draft",
+      "title": "高退货观测：米色外套（退货率 10.9%）",
+      "narrative": "SKU SKU1012（米色外套）在 2026-04-06 报告中退货率为 10.9%，日均销售 47 件，转化率 1.56%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "aging",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "方领",
+          "material": "天丝",
+          "style": "通勤",
+          "color": "咖啡色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260406-seed42",
+        "as_of": "2026-04-06",
+        "sku_ids": [
+          "SKU1012"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 47,
+          "return_rate": 0.109,
+          "conversion_rate": 0.0156,
+          "stock_age_days": 55,
+          "price": 449
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-468517d3f458",
+      "status": "draft",
+      "title": "高退货观测：咖啡色连衣裙（退货率 9.5%）",
+      "narrative": "SKU SKU1015（咖啡色连衣裙）在 2026-04-06 报告中退货率为 9.5%，日均销售 34 件，转化率 2.66%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "high",
+        "tags": {
+          "collar": "V领",
+          "material": "天丝",
+          "style": "静奢",
+          "color": "黑色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260406-seed42",
+        "as_of": "2026-04-06",
+        "sku_ids": [
+          "SKU1015"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 34,
+          "return_rate": 0.095,
+          "conversion_rate": 0.0266,
+          "stock_age_days": 76,
+          "price": 249
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-dce1d98ac798",
+      "status": "draft",
+      "title": "高退货观测：咖啡色T恤（退货率 14.6%）",
+      "narrative": "SKU SKU1016（咖啡色T恤）在 2026-04-06 报告中退货率为 14.6%，日均销售 44 件，转化率 1.41%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "0-100",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "fresh",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "V领",
+          "material": "涤纶",
+          "style": "通勤",
+          "color": "咖啡色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260406-seed42",
+        "as_of": "2026-04-06",
+        "sku_ids": [
+          "SKU1016"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 44,
+          "return_rate": 0.146,
+          "conversion_rate": 0.0141,
+          "stock_age_days": 18,
+          "price": 99
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-1b6f39712362",
+      "status": "draft",
+      "title": "高退货观测：咖啡色外套（退货率 12.1%）",
+      "narrative": "SKU SKU1017（咖啡色外套）在 2026-04-06 报告中退货率为 12.1%，日均销售 25 件，转化率 1.73%，主销渠道 shelf。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "shelf",
+        "return_signal": "elevated",
+        "inventory_signal": "aging",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "V领",
+          "material": "涤纶",
+          "style": "多巴胺",
+          "color": "米色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260406-seed42",
+        "as_of": "2026-04-06",
+        "sku_ids": [
+          "SKU1017"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 25,
+          "return_rate": 0.121,
+          "conversion_rate": 0.0173,
+          "stock_age_days": 41,
+          "price": 359
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-23",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-2e4bd35c2ba7",
+      "status": "draft",
+      "title": "高退货观测：咖啡色涤纶通勤外套（退货率 14.0%）",
+      "narrative": "SKU SKU2002（咖啡色涤纶通勤外套）在 2026-05-24 报告中退货率为 14.0%，日均销售 9 件，转化率 0.80%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "low",
+        "tags": {
+          "collar": "方领",
+          "material": "天丝",
+          "style": "通勤",
+          "color": "咖啡色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260524-seed42",
+        "as_of": "2026-05-24",
+        "sku_ids": [
+          "SKU2002"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 9,
+          "return_rate": 0.14,
+          "conversion_rate": 0.008,
+          "stock_age_days": 72,
+          "price": 319
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-24",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-b225e3121762",
+      "status": "draft",
+      "title": "高退货观测：奶咖色涤纶半身裙（退货率 12.0%）",
+      "narrative": "SKU SKU2008（奶咖色涤纶半身裙）在 2026-05-24 报告中退货率为 12.0%，日均销售 15 件，转化率 1.10%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "aging",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "翻领",
+          "material": "羊毛混纺",
+          "style": "休闲",
+          "color": "白色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260524-seed42",
+        "as_of": "2026-05-24",
+        "sku_ids": [
+          "SKU2008"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 15,
+          "return_rate": 0.12,
+          "conversion_rate": 0.011,
+          "stock_age_days": 55,
+          "price": 159
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-24",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-7d9ae51e6f6c",
+      "status": "draft",
+      "title": "高退货观测：深棕色纯棉厚T恤（退货率 8.0%）",
+      "narrative": "SKU SKU2010（深棕色纯棉厚T恤）在 2026-05-24 报告中退货率为 8.0%，日均销售 18 件，转化率 1.30%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "0-100",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "方领",
+          "material": "牛仔",
+          "style": "静奢",
+          "color": "深棕色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260524-seed42",
+        "as_of": "2026-05-24",
+        "sku_ids": [
+          "SKU2010"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 18,
+          "return_rate": 0.08,
+          "conversion_rate": 0.013,
+          "stock_age_days": 68,
+          "price": 89
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-24",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-79c58af9ba08",
+      "status": "draft",
+      "title": "滞销观测：咖啡色涤纶通勤外套（库龄 72 天）",
+      "narrative": "SKU SKU2002（咖啡色涤纶通勤外套）在 2026-05-24 报告中库龄 72 天，日均销售 9 件，在库 - 件。具体原因（趋势退热/定价偏高/备货失误等）需结合市场与运营人工判断。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "low",
+        "tags": {
+          "collar": "方领",
+          "material": "天丝",
+          "style": "通勤",
+          "color": "咖啡色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260524-seed42",
+        "as_of": "2026-05-24",
+        "sku_ids": [
+          "SKU2002"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 9,
+          "return_rate": null,
+          "stock": null,
+          "stock_age_days": 72
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-24",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-de5f8e1ab3ad",
+      "status": "draft",
+      "title": "定价大幅偏差：咖啡色涤纶通勤外套（现 ¥319.0→建议 ¥239.0，偏差 25%）",
+      "narrative": "SKU SKU2002（咖啡色涤纶通勤外套）在 2026-05-24 报告中，规则定价建议从 ¥319.0 调至 ¥239.0（弹性清仓·竞品卡位），偏差 25%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260524-seed42",
+        "as_of": "2026-05-24",
+        "sku_ids": [
+          "SKU2002"
+        ],
+        "kpi_snapshot": {
+          "current_price": 319.0,
+          "suggested_price": 239.0,
+          "strategy": "弹性清仓·竞品卡位",
+          "price_deviation_pct": 25.1
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-24",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-a0ee79e73c93",
+      "status": "draft",
+      "title": "定价大幅偏差：深棕色纯棉厚T恤（现 ¥89.0→建议 ¥69.0，偏差 22%）",
+      "narrative": "SKU SKU2010（深棕色纯棉厚T恤）在 2026-05-24 报告中，规则定价建议从 ¥89.0 调至 ¥69.0（清仓冲量·击穿竞品甜蜜点），偏差 22%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "0-100",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260524-seed42",
+        "as_of": "2026-05-24",
+        "sku_ids": [
+          "SKU2010"
+        ],
+        "kpi_snapshot": {
+          "current_price": 89.0,
+          "suggested_price": 69.0,
+          "strategy": "清仓冲量·击穿竞品甜蜜点",
+          "price_deviation_pct": 22.5
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-24",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-d0c8201a00b1",
+      "status": "draft",
+      "title": "高退货观测：咖啡色涤纶通勤外套（退货率 14.0%）",
+      "narrative": "SKU SKU2002（咖啡色涤纶通勤外套）在 2026-05-26 报告中退货率为 14.0%，日均销售 9 件，转化率 0.80%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "low",
+        "tags": {
+          "collar": "方领",
+          "material": "天丝",
+          "style": "通勤",
+          "color": "咖啡色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260526-seed42",
+        "as_of": "2026-05-26",
+        "sku_ids": [
+          "SKU2002"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 9,
+          "return_rate": 0.14,
+          "conversion_rate": 0.008,
+          "stock_age_days": 72,
+          "price": 319
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-26",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-2c7571b8dd90",
+      "status": "draft",
+      "title": "高退货观测：奶咖色涤纶半身裙（退货率 12.0%）",
+      "narrative": "SKU SKU2008（奶咖色涤纶半身裙）在 2026-05-26 报告中退货率为 12.0%，日均销售 15 件，转化率 1.10%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "100-200",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "aging",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "翻领",
+          "material": "羊毛混纺",
+          "style": "休闲",
+          "color": "白色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260526-seed42",
+        "as_of": "2026-05-26",
+        "sku_ids": [
+          "SKU2008"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 15,
+          "return_rate": 0.12,
+          "conversion_rate": 0.011,
+          "stock_age_days": 55,
+          "price": 159
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-26",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-c7d325547bf5",
+      "status": "draft",
+      "title": "高退货观测：深棕色纯棉厚T恤（退货率 8.0%）",
+      "narrative": "SKU SKU2010（深棕色纯棉厚T恤）在 2026-05-26 报告中退货率为 8.0%，日均销售 18 件，转化率 1.30%，主销渠道 live。具体归因（色差/版型/材质/描述失实等）需结合评价与退货原因人工补充。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "0-100",
+        "channel_dominant": "live",
+        "return_signal": "elevated",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "normal",
+        "tags": {
+          "collar": "方领",
+          "material": "牛仔",
+          "style": "静奢",
+          "color": "深棕色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260526-seed42",
+        "as_of": "2026-05-26",
+        "sku_ids": [
+          "SKU2010"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 18,
+          "return_rate": 0.08,
+          "conversion_rate": 0.013,
+          "stock_age_days": 68,
+          "price": 89
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-26",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-9a67e27bfd0d",
+      "status": "draft",
+      "title": "滞销观测：咖啡色涤纶通勤外套（库龄 72 天）",
+      "narrative": "SKU SKU2002（咖啡色涤纶通勤外套）在 2026-05-26 报告中库龄 72 天，日均销售 9 件，在库 - 件。具体原因（趋势退热/定价偏高/备货失误等）需结合市场与运营人工判断。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "overstocked",
+        "conversion_signal": "low",
+        "tags": {
+          "collar": "方领",
+          "material": "天丝",
+          "style": "通勤",
+          "color": "咖啡色"
+        },
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260526-seed42",
+        "as_of": "2026-05-26",
+        "sku_ids": [
+          "SKU2002"
+        ],
+        "kpi_snapshot": {
+          "daily_sales": 9,
+          "return_rate": null,
+          "stock": null,
+          "stock_age_days": 72
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-26",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-2888bc381765",
+      "status": "draft",
+      "title": "新品企划决策：天丝/亚麻混纺衬衫裙、夏季薄款针织开衫、高腰垂感阔腿裤…",
+      "narrative": "2026-05-26 报告中 M3 评估产生 approve_new，品类：天丝/亚麻混纺衬衫裙, 夏季薄款针织开衫, 高腰垂感阔腿裤, 天丝/亚麻混纺衬衫, A字吊带连衣裙（内搭型）。建议在上新 30 天后回写动销结果，判断企划决策质量。",
+      "search_keys": {
+        "season": "spring",
+        "category": [
+          "天丝/亚麻混纺衬衫裙",
+          "夏季薄款针织开衫",
+          "高腰垂感阔腿裤",
+          "天丝/亚麻混纺衬衫",
+          "A字吊带连衣裙（内搭型）"
+        ],
+        "price_tier": "",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [
+          "老钱风",
+          "辣妹风",
+          "多巴胺穿搭",
+          "慵懒风",
+          "奶油风"
+        ],
+        "criteria_style": "法式轻熟、干净利落的通勤风；周末度假感的休闲风",
+        "criteria_audience": "25-35岁都市女性，注重品质感但预算有限"
+      },
+      "evidence": {
+        "run_id": "run-20260526-seed42",
+        "as_of": "2026-05-26",
+        "sku_ids": [],
+        "kpi_snapshot": {}
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-26",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-8e78748324b3",
+      "status": "draft",
+      "title": "定价大幅偏差：咖啡色涤纶通勤外套（现 ¥319.0→建议 ¥239.0，偏差 25%）",
+      "narrative": "SKU SKU2002（咖啡色涤纶通勤外套）在 2026-05-26 报告中，规则定价建议从 ¥319.0 调至 ¥239.0（清仓止损·材质认知纠偏），偏差 25%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "200-500",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260526-seed42",
+        "as_of": "2026-05-26",
+        "sku_ids": [
+          "SKU2002"
+        ],
+        "kpi_snapshot": {
+          "current_price": 319.0,
+          "suggested_price": 239.0,
+          "strategy": "清仓止损·材质认知纠偏",
+          "price_deviation_pct": 25.1
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-26",
+      "valid_until": null,
+      "archived_at": null
+    },
+    {
+      "experience_id": "exp-b58bdb4b381a",
+      "status": "draft",
+      "title": "定价大幅偏差：深棕色纯棉厚T恤（现 ¥89.0→建议 ¥69.0，偏差 22%）",
+      "narrative": "SKU SKU2010（深棕色纯棉厚T恤）在 2026-05-26 报告中，规则定价建议从 ¥89.0 调至 ¥69.0（清仓冲量·甜点价卡位），偏差 22%。实际是否执行调价、调价后转化与毛利变化需人工后续补录。",
+      "search_keys": {
+        "season": "spring",
+        "category": [],
+        "price_tier": "0-100",
+        "channel_dominant": "",
+        "return_signal": "",
+        "inventory_signal": "",
+        "conversion_signal": "",
+        "tags": {},
+        "trend_keywords": [],
+        "criteria_style": "",
+        "criteria_audience": ""
+      },
+      "evidence": {
+        "run_id": "run-20260526-seed42",
+        "as_of": "2026-05-26",
+        "sku_ids": [
+          "SKU2010"
+        ],
+        "kpi_snapshot": {
+          "current_price": 89.0,
+          "suggested_price": 69.0,
+          "strategy": "清仓冲量·甜点价卡位",
+          "price_deviation_pct": 22.5
+        }
+      },
+      "confidence": "low",
+      "source": "auto_draft",
+      "created_at": "2026-05-26",
+      "valid_until": null,
+      "archived_at": null
+    }
+  ]
+}
