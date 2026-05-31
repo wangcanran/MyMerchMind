@@ -25,22 +25,27 @@ export function StrategyBoard() {
   const [strategies, setStrategies] = useState<StrategyRecord[]>([])
   const [stats, setStats] = useState<StrategyStats | null>(null)
   const [month, setMonth] = useState(() => new Date().toISOString().slice(0, 7))
+  const [moduleFilter, setModuleFilter] = useState('selection')
+  const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(false)
   const [feedbackTarget, setFeedbackTarget] = useState<StrategyRecord | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 10
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const [sData, stData] = await Promise.all([
-        fetchStrategies({ month }),
+        fetchStrategies({ month, module: moduleFilter || undefined, status: statusFilter || undefined }),
         fetchStrategyStats(month),
       ])
       setStrategies(sData.strategies)
       setStats(stData)
+      setCurrentPage(1)
     } finally {
       setLoading(false)
     }
-  }, [month])
+  }, [month, moduleFilter, statusFilter])
 
   useEffect(() => { void load() }, [load])
 
@@ -61,8 +66,12 @@ export function StrategyBoard() {
     void load()
   }
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(strategies.length / PAGE_SIZE))
+  const pagedStrategies = strategies.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
   // Group by module
-  const grouped = strategies.reduce<Record<string, StrategyRecord[]>>((acc, s) => {
+  const grouped = pagedStrategies.reduce<Record<string, StrategyRecord[]>>((acc, s) => {
     const mod = s.module || 'other'
     ;(acc[mod] ??= []).push(s)
     return acc
@@ -73,6 +82,21 @@ export function StrategyBoard() {
       <div className="strategy-board__header">
         <h2>策略看板</h2>
         <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+      </div>
+
+      <div className="strategy-filters">
+        <select value={moduleFilter} onChange={(e) => setModuleFilter(e.target.value)}>
+          {Object.entries(MODULE_LABELS).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">全部状态</option>
+          {Object.entries(STATUS_LABELS).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
+        <span className="strategy-count">{strategies.length} 条策略</span>
       </div>
 
       {stats && (
@@ -123,6 +147,28 @@ export function StrategyBoard() {
 
       {!loading && strategies.length === 0 && (
         <p className="muted">本月暂无策略记录。生成报告后策略会自动入库。</p>
+      )}
+
+      {totalPages > 1 && (
+        <div className="pagination">
+          <button
+            type="button"
+            className="btn btn-sm"
+            disabled={currentPage <= 1}
+            onClick={() => setCurrentPage((p) => p - 1)}
+          >
+            上一页
+          </button>
+          <span className="pagination-info">{currentPage} / {totalPages}</span>
+          <button
+            type="button"
+            className="btn btn-sm"
+            disabled={currentPage >= totalPages}
+            onClick={() => setCurrentPage((p) => p + 1)}
+          >
+            下一页
+          </button>
+        </div>
       )}
 
       {feedbackTarget && (

@@ -30,6 +30,8 @@ export function CompetitorModule() {
   const [message, setMessage] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 15
 
   useEffect(() => { save(groups) }, [groups])
 
@@ -156,6 +158,7 @@ export function CompetitorModule() {
       )}
 
       {groups.length > 0 && (
+        <>
         <div className="erp-table-wrap">
           <table className="erp-table">
             <thead>
@@ -168,7 +171,7 @@ export function CompetitorModule() {
               </tr>
             </thead>
             <tbody>
-              {groups.map((g, i) => {
+              {groups.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((g, i) => {
                 const prices = g.competitors.map((c) => c.price)
                 const minP = Math.min(...prices)
                 const maxP = Math.max(...prices)
@@ -197,6 +200,14 @@ export function CompetitorModule() {
             </tbody>
           </table>
         </div>
+        {groups.length > PAGE_SIZE && (
+          <div className="pagination">
+            <button type="button" className="btn btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>上一页</button>
+            <span className="pagination-info">{currentPage} / {Math.ceil(groups.length / PAGE_SIZE)}</span>
+            <button type="button" className="btn btn-sm" disabled={currentPage >= Math.ceil(groups.length / PAGE_SIZE)} onClick={() => setCurrentPage((p) => p + 1)}>下一页</button>
+          </div>
+        )}
+        </>
       )}
 
       {groups.length === 0 && !showAdd && (

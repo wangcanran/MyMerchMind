@@ -412,9 +412,11 @@ class CategoryManagementAgent:
             if used_llm_match:
                 llm_d = llm_match_results[cat]
                 if llm_d["is_new"]:
-                    if conservative:
+                    # 只有当该品类本身有库存积压时才 defer，不因其他品类的积压阻止新品
+                    cat_has_overstock = cat in active_overstock_cats
+                    if conservative and cat_has_overstock:
                         decision = "defer_new"
-                        reason = f"LLM 判定为新细分品类，但当前库存压力偏高，建议延后。理由：{llm_d.get('reasoning', '')}"
+                        reason = f"LLM 判定为新细分品类，且该品类当前有库存积压，建议延后。理由：{llm_d.get('reasoning', '')}"
                     else:
                         decision = "approve_new"
                         reason = f"LLM 判定为新细分品类，建议上新。理由：{llm_d.get('reasoning', '')}"

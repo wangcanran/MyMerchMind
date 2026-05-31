@@ -53,14 +53,29 @@ class InventoryWarningAgent:
             stock_position = current_stock + in_transit
             stock_position_units += stock_position
 
+            # Use 7-day average from price_history if available (more stable than single-day snapshot)
+            avg_daily_7d = daily_sales
+            sales_volatility = 0.0
+            history = item.get("price_history")
+            if isinstance(history, list) and len(history) >= 7:
+                recent_sales = [int(r.get("daily_sales") or 0) for r in history[-7:] if isinstance(r, dict)]
+                if recent_sales:
+                    avg_daily_7d = round(sum(recent_sales) / len(recent_sales), 1)
+                    mean_val = sum(recent_sales) / len(recent_sales)
+                    if mean_val > 0:
+                        variance = sum((x - mean_val) ** 2 for x in recent_sales) / len(recent_sales)
+                        sales_volatility = round((variance ** 0.5) / mean_val, 2)
+
+            effective_daily = avg_daily_7d if avg_daily_7d > 0 else daily_sales
+
             channel_name, channel_share = self._get_channel_focus(item)
             return_rate = float(item.get("return_rate", 0.0))
             conversion_rate = float(item.get("conversion_rate", 0.0))
             stock_age_days = int(item.get("stock_age_days", 0))
 
-            if daily_sales > 0:
-                current_coverage_days = current_stock / daily_sales
-                total_coverage_days = stock_position / daily_sales
+            if effective_daily > 0:
+                current_coverage_days = current_stock / effective_daily
+                total_coverage_days = stock_position / effective_daily
                 current_coverages.append(current_coverage_days)
                 total_coverages.append(total_coverage_days)
             else:
@@ -113,12 +128,15 @@ class InventoryWarningAgent:
                         "sku_id": item["sku_id"],
                         "name": item["name"],
                         "daily_sales": daily_sales,
+                        "avg_daily_7d": avg_daily_7d,
+                        "sales_volatility": sales_volatility,
                         "current_stock": current_stock,
                         "in_transit": in_transit,
                         "stock_position": stock_position,
                         "cost_price": float(item.get("cost_price") or 0),
                         "coverage_days": round(current_coverage_days, 1),
                         "total_coverage_days": round(total_coverage_days, 1),
+                        "coverage_days_pessimistic": round(stock_position / (avg_daily_7d * (1 + sales_volatility)) if avg_daily_7d * (1 + sales_volatility) > 0 else 0, 1),
                         "coverage_gap_days": coverage_gap_days,
                         "safety_stock_days": safety_stock_days,
                         "target_stock_days": target_stock_days,
@@ -164,6 +182,8 @@ class InventoryWarningAgent:
                         "sku_id": item["sku_id"],
                         "name": item["name"],
                         "daily_sales": daily_sales,
+                        "avg_daily_7d": avg_daily_7d,
+                        "sales_volatility": sales_volatility,
                         "current_stock": current_stock,
                         "in_transit": in_transit,
                         "stock_position": stock_position,
@@ -221,12 +241,17 @@ class InventoryWarningAgent:
         if low_stock_alerts:
             first_low = low_stock_alerts[0]
             recommendations.append(
-                f"补货优先级最高：{first_low['sku_id']}（{first_low['name']}），当前仅可售 {first_low['coverage_days']} 天，建议补 {first_low['suggest_replenish_qty']} 件。"
+                f"补货优先级最高：{first_low['sku_id']}（{first_low['name']}），"
+                f"当前仅可售 {first_low['coverage_days']} 天（7 天均销 {first_low.get('avg_daily_7d', first_low['daily_sales'])} 件），"
+                f"建议补 {first_low['suggest_replenish_qty']} 件；"
+                f"若供应商无法 3 天内发货，立即启动替代供应商或临时调拨。"
             )
         if overstock_alerts:
             first_over = overstock_alerts[0]
             recommendations.append(
-                f"去化优先级最高：{first_over['sku_id']}（{first_over['name']}），库存覆盖 {first_over['total_coverage_days']} 天，建议先做 {first_over['recommended_action']}。"
+                f"去化优先级最高：{first_over['sku_id']}（{first_over['name']}），"
+                f"库存覆盖 {first_over['total_coverage_days']} 天，建议先做 {first_over['recommended_action']}；"
+                f"执行后 7 天内日销未达 {max(first_over['daily_sales'] * 2, 10)} 件则升级为降价清仓。"
             )
         if not recommendations:
             recommendations.append("当前库存结构健康，无需额外干预。")
@@ -442,6 +467,8 @@ class InventoryWarningAgent:
     ) -> List[Dict[str, Any]]:
         queue: List[Dict[str, Any]] = []
         for row in low_stock_alerts[:4]:
+            if row.get("suggest_replenish_qty", 0) <= 0:
+                continue
             due_in_days = 1 if row["urgency_level"] == "critical" else 2 if row["urgency_level"] == "high" else 4
             queue.append(
                 {

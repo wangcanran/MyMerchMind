@@ -1,7 +1,17 @@
 import type { AgentReport, ReportParams } from '../types/report'
 
 const CACHE_KEY = 'ecommerce_agent_report_session_v1'
+const HISTORY_KEY = 'ecommerce_agent_report_history_v1'
 const CACHE_VERSION = 1
+const MAX_HISTORY = 10
+
+export interface ReportHistoryEntry {
+  id: string
+  savedAt: number
+  label: string
+  params: ReportParams
+  report: AgentReport
+}
 
 export function defaultReportParams(): ReportParams {
   return {
@@ -69,6 +79,8 @@ export function saveSessionReportSnapshot(
   } catch {
     // 配额或其它限制：忽略
   }
+  // 同时存入历史
+  saveToHistory(params, report)
 }
 
 export function loadSessionReportSnapshot(): {
@@ -93,4 +105,43 @@ export function loadSessionReportSnapshot(): {
   } catch {
     return null
   }
+}
+
+function saveToHistory(params: ReportParams, report: AgentReport): void {
+  try {
+    const history = loadHistory()
+    const entry: ReportHistoryEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      savedAt: Date.now(),
+      label: `${report.context.as_of || new Date().toISOString().slice(0, 10)} · Top ${report.context.top_n}`,
+      params,
+      report,
+    }
+    history.unshift(entry)
+    if (history.length > MAX_HISTORY) history.length = MAX_HISTORY
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+  } catch {
+    // localStorage 满了或不可用
+  }
+}
+
+export function loadHistory(): ReportHistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY)
+    if (!raw) return []
+    const arr = JSON.parse(raw)
+    if (!Array.isArray(arr)) return []
+    return arr.filter((e: unknown) => {
+      if (!e || typeof e !== 'object') return false
+      const entry = e as ReportHistoryEntry
+      return entry.id && entry.savedAt && isAgentReportShape(entry.report)
+    })
+  } catch {
+    return []
+  }
+}
+
+export function deleteHistoryEntry(id: string): void {
+  const history = loadHistory().filter((e) => e.id !== id)
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
 }

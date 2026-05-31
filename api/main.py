@@ -4,14 +4,19 @@ from __future__ import annotations
 import os
 from datetime import date
 from pathlib import Path
+import json
+import queue
+import threading
 from typing import Any, Dict, Optional
 
 from fastapi import Body, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from ecommerce_agent.main import build_markdown_report
 from ecommerce_agent.orchestrator import DemoOrchestrator
+from .auth import register_user, verify_user
 
 app = FastAPI(title="ECommerce Agent API", version="0.1.0")
 
@@ -122,6 +127,7 @@ def _run_orchestrator(
     use_llm: bool = True,
     erp_data: Optional[list] = None,
     competitors_data: Optional[list] = None,
+    progress_callback=None,
 ) -> Dict[str, Any]:
     from ecommerce_agent.data.erp_adapter import ERPAdapter
 
@@ -137,7 +143,7 @@ def _run_orchestrator(
                 continue
             sku_table[sid] = {
                 "name": item.get("name", sid),
-                "price": item.get("price", 0),
+                "price": item.get("price") or item.get("current_price") or 0,
                 "cost_price": item.get("cost_price", 0),
                 "daily_sales": item.get("daily_sales", 0),
                 "stock": item.get("stock", 0),
@@ -172,6 +178,7 @@ def _run_orchestrator(
         use_llm=use_llm,
         erp_adapter=erp_adapter,
         uploaded_competitor_products=competitors_data if competitors_data else None,
+        progress_callback=progress_callback,
     )
     report = orch.run()
 
@@ -256,6 +263,57 @@ def post_report(body: ReportRunBody = Body(...)) -> Dict[str, Any]:
     )
     report["markdown"] = build_markdown_report(report)
     return report
+
+
+@app.post("/api/report/stream")
+def post_report_stream(body: ReportRunBody = Body(...)):
+    """SSE 流式生成报告，实时推送进度。"""
+    as_of = body.as_of.strip() or date.today().isoformat()
+    fb = _resolve_feedback_path(body.feedback_memory)
+    sel_text = _normalize_selection_text(body.selection_requirements)
+
+    progress_queue: queue.Queue = queue.Queue()
+
+    def progress_cb(step: str, current: int, total: int):
+        progress_queue.put({"type": "progress", "step": step, "current": current, "total": total})
+
+    def run_in_thread():
+        try:
+            report = _run_orchestrator(
+                seed=body.seed,
+                top_n=body.top_n,
+                as_of=as_of,
+                replenishment_cycle_days=body.replenishment_cycle,
+                overstock_days=body.overstock_days,
+                feedback_memory_path=fb,
+                selection_requirements_text=sel_text,
+                target_gross_margin=body.target_gross_margin,
+                use_llm=body.use_llm,
+                erp_data=body.erp_data,
+                competitors_data=body.competitors_data,
+                progress_callback=progress_cb,
+            )
+            report["markdown"] = build_markdown_report(report)
+            progress_queue.put({"type": "result", "data": report})
+        except Exception as e:
+            progress_queue.put({"type": "error", "message": str(e)})
+
+    thread = threading.Thread(target=run_in_thread, daemon=True)
+    thread.start()
+
+    def event_stream():
+        while True:
+            try:
+                msg = progress_queue.get(timeout=2100)
+            except queue.Empty:
+                yield f"data: {json.dumps({'type': 'error', 'message': '超时'}, ensure_ascii=False)}\n\n"
+                break
+            yield f"data: {json.dumps(msg, ensure_ascii=False)}\n\n"
+            if msg["type"] in ("result", "error"):
+                break
+        thread.join(timeout=5)
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @app.get(
@@ -531,4 +589,30 @@ def submit_strategy_feedback(strategy_id: str, body: FeedbackBody) -> Dict[str, 
         "strategy": entry,
         "generated_experience": experience,
     }
+
+
+# =============================================================================
+# 用户认证
+# =============================================================================
+
+
+class LoginBody(BaseModel):
+    username: str = Field(..., min_length=1)
+    password: str = Field(..., min_length=1)
+
+
+@app.post("/api/login", summary="用户登录")
+def login(body: LoginBody = Body(...)) -> Dict[str, str]:
+    if not verify_user(body.username, body.password):
+        raise HTTPException(status_code=401, detail="用户名或密码错误")
+    return {"message": "登录成功"}
+
+
+@app.post("/api/register", summary="用户注册")
+def register(body: LoginBody = Body(...)) -> Dict[str, str]:
+    try:
+        register_user(body.username, body.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"message": "注册成功"}
 

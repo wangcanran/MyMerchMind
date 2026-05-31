@@ -1,8 +1,230 @@
-# 服装企业数字化大脑 Agent
+# MerchMind
 
-覆盖**选品、库存管理、销量回顾**的垂类 Agent，连接市场外部数据、公司内部 ERP 数据与复杂决策逻辑。
+> Multi-agent e-commerce merchandising platform powered by LLM function calling.
 
-## 整体架构
+MerchMind 是一个多智能体电商运营决策平台。它通过 LLM Tool Calling 驱动定价、库存、销售分析等核心模块，将经验库作为 Agent 的长期记忆注入决策过程，实现"数据 → 决策 → 执行 → 反馈 → 学习"的完整闭环。
+
+## Why MerchMind
+
+传统电商运营决策系统的问题：
+- **规则引擎** — 规则越加越多，互相冲突，维护困难
+- **LLM 直接生成** — 幻觉严重，数字不可信，无法追溯
+- **各模块独立** — 定价不知道库存状态，库存不知道退货率
+
+MerchMind 的解法：
+- **LLM 做决策编排，工具做精确计算** — Agent 决定"用什么策略"，工具保证"数字正确"
+- **跨模块冲突自动解决** — 缺货 SKU 不会被建议降价，高退货 SKU 自动暂停促销
+- **经验驱动决策** — 历史反馈沉淀为经验，下次决策时 Agent 自动参考
+
+## Features
+
+- **Tool-based Agents** — 定价/库存/销售分析通过 LLM function calling 自主编排
+- **冲突解决引擎** — 6 条硬约束规则，按 SKU 聚合决策并自动仲裁
+- **经验库闭环** — 策略执行 → 反馈 → 经验生成 → 注入下次决策
+- **实时进度推送** — SSE 流式报告生成，前端实时显示当前步骤
+- **可视化报告** — Sparkline 图表、环形图、StatChip 指标卡片
+- **HTML/Markdown 导出** — 带排版的报告文件下载
+
+## Architecture
+
+```
+┌──────────────────────────────────────────────┐
+│              React Frontend                    │
+└─────────────────────┬────────────────────────┘
+                      │ SSE / REST
+┌─────────────────────┴────────────────────────┐
+│              FastAPI Backend                   │
+└─────────────────────┬────────────────────────┘
+                      │
+┌─────────────────────┴────────────────────────┐
+│               Orchestrator                    │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐        │
+│  │Pricing  │ │Inventory│ │ Sales   │        │
+│  │Agent    │ │Agent    │ │ Agent   │  ...   │
+│  │(5 tools)│ │(4 tools)│ │(5 tools)│        │
+│  └────┬────┘ └────┬────┘ └────┬────┘        │
+│       └────────────┼──────────┘              │
+│                    │                          │
+│  ┌─────────────────┴──────────────────────┐  │
+│  │  Conflict Resolution + Action Registry  │  │
+│  └─────────────────────────────────────────┘  │
+│                    │                          │
+│  ┌─────────────────┴──────────────────────┐  │
+│  │         Experience Store (Memory)       │  │
+│  └─────────────────────────────────────────┘  │
+└───────────────────────────────────────────────┘
+         │
+         ▼ LLM Function Calling
+   ┌───────────┐
+   │ Any OpenAI│
+   │ Compatible│
+   │ LLM API   │
+   └───────────┘
+```
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.10+
+- Node.js 18+
+- An OpenAI-compatible LLM API key (e.g., OpenAI, Anthropic, Deepseek, Kimi)
+
+### Installation
+
+```bash
+git clone https://github.com/your-org/MerchMind.git
+cd MerchMind
+
+# Backend dependencies
+pip install fastapi uvicorn httpx bcrypt
+
+# Frontend dependencies
+cd web && npm install && cd ..
+```
+
+### Configuration
+
+Create a `.env` file or set environment variables:
+
+```bash
+LLM_API_KEY=your-api-key
+LLM_BASE_URL=https://api.openai.com/v1      # or any compatible endpoint
+LLM_MODEL=gpt-4o                             # model that supports function calling
+LLM_TIMEOUT_S=120
+```
+
+### Run
+
+```bash
+# Terminal 1: Backend
+python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
+
+# Terminal 2: Frontend
+cd web && npm run dev
+```
+
+Open `http://localhost:5173`, register an account, upload data, and generate a report.
+
+## Data Format
+
+Upload a single JSON file containing all SKU data:
+
+```json
+[
+  {
+    "sku_id": "SKU001",
+    "name": "Product Name",
+    "current_price": 259,
+    "cost_price": 108,
+    "daily_sales": 38,
+    "stock": 420,
+    "in_transit": 150,
+    "return_rate": 0.04,
+    "channel_sales": { "live": 18, "private": 8, "shelf": 12 },
+    "conversion_rate": 0.022,
+    "stock_age_days": 20,
+    "review_snippets": ["Great fabric", "True to size"],
+    "price_history": [
+      { "date": "2026-05-24", "price": 259, "daily_sales": 38 }
+    ]
+  }
+]
+```
+
+A demo dataset is included at `web/public/demo_price_history.json`.
+
+## How It Works
+
+### 1. Agent Decision Making
+
+Each Agent receives SKU data + historical experiences, then autonomously calls tools:
+
+```
+Agent sees: SKU2002, return_rate=14%, experience="涤纶降价无效"
+Agent decides: call decide_no_action(reason="高退货待诊断")
+Result: No price change (instead of blindly suggesting a discount)
+```
+
+### 2. Conflict Resolution
+
+After all Agents output decisions, the orchestrator resolves conflicts:
+
+```
+SKU2006: PricingAgent says "lower price" + InventoryAgent says "out of stock"
+→ Rule 4: coverage < 3 days, block price reduction
+→ Final: replenish only, no price change
+```
+
+### 3. Experience Loop
+
+```
+Report → Strategy tracked → Operator executes → Feedback submitted
+→ Experience generated → Injected into next report's Agent prompts
+```
+
+## Project Structure
+
+```
+├── api/                        # FastAPI backend
+├── ecommerce_agent/
+│   ├── orchestrator.py         # Agent orchestration + conflict resolution
+│   ├── agents/
+│   │   ├── pricing_agent_v2.py     # Tool-based pricing
+│   │   ├── pricing_tools.py        # Pricing tool definitions
+│   │   ├── inventory_agent_v2.py   # Tool-based inventory
+│   │   ├── inventory_tools.py      # Inventory tool definitions
+│   │   ├── sales_agent_v2.py       # Tool-based sales analysis
+│   │   ├── category_management_agent.py
+│   │   └── product_selection_agent.py
+│   ├── memory/                 # Experience & strategy stores
+│   ├── data/                   # Data adapters
+│   └── llm/                    # LLM client (function calling support)
+├── web/                        # React frontend
+└── demo_erp_data.json          # Demo dataset
+```
+
+## Extending
+
+### Add a New Tool
+
+1. Define the tool schema in `*_tools.py`:
+```python
+{
+    "type": "function",
+    "function": {
+        "name": "your_tool",
+        "description": "What it does",
+        "parameters": { ... }
+    }
+}
+```
+
+2. Implement the executor method in the `ToolExecutor` class.
+
+3. The Agent will automatically discover and use it via function calling.
+
+### Add a New Agent
+
+1. Create `agents/your_agent_v2.py` with a system prompt and tool list.
+2. Create `agents/your_tools.py` with tool definitions and executor.
+3. Wire it into `orchestrator.py`.
+
+## Roadmap
+
+- [ ] Multi-agent consensus algorithm (replace hard-coded conflict rules)
+- [ ] CSIO constraint satisfaction optimization
+- [ ] Async parallel SKU processing
+- [ ] Migrate category/selection agents to Tool-based architecture
+- [ ] Real-time data connectors (ERP API, marketplace API)
+
+## License
+
+MIT
+
+## Contributing
+
+Issues and PRs welcome. Please read the architecture section before contributing.
 
 ```
                     ┌─────────────────────────────────────────────────────────┐

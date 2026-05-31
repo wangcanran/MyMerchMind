@@ -208,8 +208,13 @@ def generate_experience_from_feedback(
         confidence=confidence,
     )
 
-    # 补充 source 标记
+    # 修正 source 为 strategy_feedback（append_human 默认设为 human）
     if entry:
+        exp_id = entry.get("experience_id")
+        for e in experience_store._data.get("experiences", []):
+            if e.get("experience_id") == exp_id:
+                e["source"] = "strategy_feedback"
+                break
         entry["source"] = "strategy_feedback"
         experience_store.save()
 

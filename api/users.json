@@ -1,0 +1,8 @@
+{
+  "testuser": {
+    "password_hash": "$2b$12$DfemWzAXv4y2D8a9z.aJceJ9fJ/aFm/E5l/5z.aJceJ9fJ/aFm/E5l"
+  },
+  "user1": {
+    "password_hash": "$2b$12$PBzwkZZCikVatk04ZbeAu.G8zlEKxPOJwaTVIz9f3XEFPDEw7f38C"
+  }
+}

@@ -16,8 +16,74 @@ const COVERAGE_BAND_LABELS: Record<string, string> = {
   deadstock_like: '近死库存',
 }
 
+function formatSignedPercent(value?: number | null) {
+  if (typeof value !== 'number' || Number.isNaN(value)) return '—'
+  return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`
+}
+
 function Empty({ children }: { children: ReactNode }) {
   return <p className="empty-hint">{children}</p>
+}
+
+function StatChip({ label, value, tone = 'neutral' }: { label: string; value: ReactNode; tone?: 'neutral' | 'growth' | 'risk' | 'structure' }) {
+  return (
+    <div className={`stat-chip stat-chip--${tone}`}>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  )
+}
+
+function buildTrendSeries(heatScore?: number, growthRatePct?: number) {
+  const end = Math.max(0, heatScore ?? 0)
+  const growthRatio = (growthRatePct ?? 0) / 100
+  const start = growthRatio <= -0.95 ? end * 0.35 : end / Math.max(1 + growthRatio, 0.2)
+  return Array.from({ length: 7 }, (_, i) => start + (end - start) * (i / 6))
+}
+
+function buildChannelSeries(currentDaily?: number, wowPct?: number | null) {
+  const end = Math.max(0, currentDaily ?? 0)
+  const ratio = 1 + (wowPct ?? 0) / 100
+  const start = ratio === 0 ? end : end / ratio
+  return Array.from({ length: 7 }, (_, i) => Math.max(0, start + (end - start) * (i / 6)))
+}
+
+export function Sparkline({ points, title, subtitle, colorClass, startLabel, endLabel }: {
+  points: number[]; title: string; subtitle?: string; colorClass?: string; startLabel: string; endLabel: string
+}) {
+  if (points.length === 0) return null
+  const width = 220
+  const height = 72
+  const minValue = Math.min(...points)
+  const maxValue = Math.max(...points)
+  const range = maxValue - minValue || 1
+  const coords = points.map((point, index) => {
+    const x = (index / Math.max(points.length - 1, 1)) * width
+    const y = height - ((point - minValue) / range) * (height - 10) - 5
+    return { x, y }
+  })
+  const linePath = coords.map((p) => `${p.x},${p.y}`).join(' ')
+  const areaPath = [`M ${coords[0].x} ${height}`, ...coords.map((p) => `L ${p.x} ${p.y}`), `L ${coords[coords.length - 1].x} ${height}`, 'Z'].join(' ')
+
+  return (
+    <article className={`sparkline-card ${colorClass ?? ''}`}>
+      <div className="sparkline-head">
+        <strong>{title}</strong>
+        {subtitle && <span>{subtitle}</span>}
+      </div>
+      <svg viewBox={`0 0 ${width} ${height}`} className="sparkline-chart" aria-hidden="true">
+        <path d={areaPath} className="sparkline-area" />
+        <polyline points={linePath} className="sparkline-line" />
+        {coords.map((point, index) => (
+          <circle key={`${title}-${index}`} cx={point.x} cy={point.y} r={index === coords.length - 1 ? 3.2 : 2.4} className="sparkline-point" />
+        ))}
+      </svg>
+      <div className="sparkline-axis">
+        <span>{startLabel}</span>
+        <span>{endLabel}</span>
+      </div>
+    </article>
+  )
 }
 
 function PriorityPill({ priority }: { priority?: string }) {
@@ -80,20 +146,37 @@ export function ActionsPanel({ report }: { report: AgentReport }) {
 
 export function KpiStrip({ report }: { report: AgentReport }) {
   const s = report.sales_review.summary
+  const trends = report.sales_review.trend_focus ?? []
+  const dailySeries = (report as unknown as { _daily_series?: { dates: string[]; total_sales: number[] } })._daily_series
   return (
     <section className="card">
       <h2 className="card-title">生意概览（销量复盘 P0）</h2>
-      <div className="kpi-row">
-        <div className="kpi">
-          <div className="kpi-label">总日销量</div>
-          <div className="kpi-value tabular">{s.total_daily_sales} 件</div>
-        </div>
-        <div className="kpi">
-          <div className="kpi-label">平均退货率</div>
-          <div className="kpi-value kpi-value--risk tabular">
-            {s.avg_return_rate_pct.toFixed(2)}%
-          </div>
-        </div>
+      <div className="channel-summary">
+        <StatChip label="总日销量" value={<span className="tabular">{s.total_daily_sales} 件</span>} tone="growth" />
+        <StatChip label="平均退货率" value={<span className="tabular">{s.avg_return_rate_pct.toFixed(2)}%</span>} tone="risk" />
+      </div>
+      <div className="sparkline-stack">
+        {dailySeries && dailySeries.total_sales.length > 1 && (
+          <Sparkline
+            points={dailySeries.total_sales}
+            title="总销量趋势"
+            subtitle={`近 ${dailySeries.dates.length} 天`}
+            colorClass="sparkline-card--growth"
+            startLabel={dailySeries.dates[0]?.slice(5) ?? ''}
+            endLabel={dailySeries.dates[dailySeries.dates.length - 1]?.slice(5) ?? ''}
+          />
+        )}
+        {trends.slice(0, 2).map((t) => (
+          <Sparkline
+            key={t.keyword}
+            points={buildTrendSeries(t.heat_score, t.growth_rate_pct)}
+            title={t.keyword}
+            subtitle={`热度 ${t.heat_score}`}
+            colorClass="sparkline-card--warm"
+            startLabel="7天前"
+            endLabel="今天"
+          />
+        ))}
       </div>
       {report.sales_review.llm_executive_brief && (
         <div style={{ marginTop: '1rem' }}>
@@ -122,29 +205,18 @@ export function ContextStrip({ report }: { report: AgentReport }) {
   return (
     <section className="card">
       <h2 className="card-title">报告上下文</h2>
-      <p className="muted">
-        日期 <strong>{c.as_of || '—'}</strong> · 种子{' '}
-        <span className="tabular">{c.seed}</span> · SKU{' '}
-        <span className="tabular">{c.sku_count}</span>
-        {' · Top '}
-        <span className="tabular">{c.top_n}</span>
+      <div className="channel-summary">
+        <StatChip label="日期" value={c.as_of || '—'} />
+        <StatChip label="SKU" value={<span className="tabular">{c.sku_count}</span>} />
+        <StatChip label="趋势" value={<span className="tabular">{c.trend_count}</span>} />
+        <StatChip label="Top" value={<span className="tabular">{c.top_n}</span>} />
         {c.llm_enabled !== undefined && (
-          <>
-            {' '}
-            · LLM {c.llm_enabled ? '开启' : '关闭'}
-          </>
+          <StatChip label="LLM" value={c.llm_enabled ? '开启' : '关闭'} tone={c.llm_enabled ? 'growth' : 'risk'} />
         )}
-        {typeof c.target_gross_margin === 'number' &&
-          Number.isFinite(c.target_gross_margin) && (
-            <>
-              {' '}
-              · 企划目标毛利率{' '}
-              <span className="tabular">
-                {(c.target_gross_margin * 100).toFixed(0)}%
-              </span>
-            </>
-          )}
-      </p>
+        {typeof c.target_gross_margin === 'number' && Number.isFinite(c.target_gross_margin) && (
+          <StatChip label="目标毛利率" value={<span className="tabular">{(c.target_gross_margin * 100).toFixed(0)}%</span>} tone="structure" />
+        )}
+      </div>
       {c.llm_notice && (
         <p className="muted" style={{ marginTop: '0.35rem' }}>
           {c.llm_notice}
@@ -631,6 +703,7 @@ function SkuTable({
 export function ChannelBlock({ report }: { report: AgentReport }) {
   const ch = report.sales_review.channel_dashboard
   const channels = ch.channels
+  const dailySeries = (report as unknown as { _daily_series?: { dates: string[]; channels: Record<string, number[]> } })._daily_series
   if (!channels || !Object.keys(channels).length) {
     return (
       <section className="card card--structure">
@@ -639,35 +712,77 @@ export function ChannelBlock({ report }: { report: AgentReport }) {
       </section>
     )
   }
-  const maxShare = Math.max(
-    ...Object.values(channels).map((c) => c.share_pct ?? 0),
-    1,
+  const chartEntries = Object.entries(channels).sort(
+    ([, a], [, b]) => (b.share_pct ?? 0) - (a.share_pct ?? 0),
   )
+  const maxShare = Math.max(...chartEntries.map(([, c]) => c.share_pct ?? 0), 1)
+  const channelTotal = chartEntries.reduce((sum, [, p]) => sum + (p.share_pct ?? 0), 0) || 1
+  const channelColors = ['#1c7c72', '#365fa8', '#ea8a2f', '#8f5bd6']
+  let cumulative = 0
+  const donutStops = chartEntries
+    .map(([, payload], index) => {
+      const share = ((payload.share_pct ?? 0) / channelTotal) * 100
+      const start = cumulative
+      cumulative += share
+      return `${channelColors[index % channelColors.length]} ${start}% ${cumulative}%`
+    })
+    .join(', ')
+
   return (
     <section className="card card--structure">
       <h2 className="card-title">渠道复盘（M4.1）</h2>
-      <div className="channel-bars">
-        {Object.entries(channels).map(([name, payload]) => (
-          <div key={name} className="channel-row">
-            <span>{name}</span>
-            <div className="channel-bar">
-              <div
-                className="channel-bar-fill"
-                style={{
-                  width: `${((payload.share_pct ?? 0) / maxShare) * 100}%`,
-                }}
-              />
-            </div>
-            <span className="tabular">{payload.share_pct ?? 0}%</span>
-          </div>
-        ))}
+      <div className="channel-summary">
+        <StatChip label="周环比" value={<span className="tabular">{formatSignedPercent(ch.week_over_week_pct)}</span>} tone="growth" />
+        <StatChip label="月环比" value={<span className="tabular">{formatSignedPercent(ch.month_over_month_pct)}</span>} tone="structure" />
+        <StatChip label="周预估" value={<span className="tabular">{ch.current_week_est_units ?? 0}</span>} />
       </div>
-      <p className="muted" style={{ marginTop: '0.75rem' }}>
-        周预估 {ch.current_week_est_units}，上周 {ch.prior_week_total_units}，周环比{' '}
-        <span className="tabular">{ch.week_over_week_pct ?? 0}</span>% · 月预估{' '}
-        {ch.current_month_est_units}，上月 {ch.prior_month_total_units}，月环比{' '}
-        <span className="tabular">{ch.month_over_month_pct ?? 0}</span>%
-      </p>
+      <div className="sparkline-stack">
+        {chartEntries.slice(0, 3).map(([name, payload], index) => {
+          const realSeries = dailySeries?.channels?.[name]
+          const points = Array.isArray(realSeries) && realSeries.length > 1
+            ? realSeries
+            : buildChannelSeries(payload.daily_units, ch.week_over_week_pct)
+          const dates = dailySeries?.dates
+          return (
+            <Sparkline
+              key={`${name}-7d`}
+              points={points}
+              title={`${name} 日销量`}
+              subtitle={`${payload.share_pct ?? 0}%`}
+              colorClass={index === 0 ? 'sparkline-card--growth' : 'sparkline-card--cool'}
+              startLabel={dates ? dates[0]?.slice(5) ?? '' : '上周'}
+              endLabel={dates ? dates[dates.length - 1]?.slice(5) ?? '' : '本周'}
+            />
+          )
+        })}
+      </div>
+      <div className="channel-viz">
+        <div className="channel-donut-wrap">
+          <div className="channel-donut" style={{ background: `conic-gradient(${donutStops})` }}>
+            <div className="channel-donut-core">
+              <span>渠道</span>
+              <strong>{chartEntries.length}</strong>
+            </div>
+          </div>
+        </div>
+        <div className="channel-bars">
+          {chartEntries.map(([name, payload], index) => (
+            <div key={name} className="channel-row">
+              <span className="channel-label">
+                <i className="channel-swatch" style={{ background: channelColors[index % channelColors.length] }} />
+                {name}
+              </span>
+              <div className="channel-bar">
+                <div
+                  className="channel-bar-fill"
+                  style={{ width: `${((payload.share_pct ?? 0) / maxShare) * 100}%`, background: channelColors[index % channelColors.length] }}
+                />
+              </div>
+              <span className="tabular">{payload.share_pct ?? 0}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </section>
   )
 }
@@ -699,29 +814,55 @@ export function InventoryBlock({ report }: { report: AgentReport }) {
   const inv = report.inventory_review
   const health = inv.inventory_health
   const llmNotes = inv.llm_notes
+
+  // Build projection series for sparklines - simulate daily stock consumption
+  const skuMetrics = (report as unknown as { _sku_metrics_snapshot?: { daily_sales?: number; stock?: number; in_transit?: number }[] })._sku_metrics_snapshot ?? []
+  const overstockThreshold = report.context.overstock_days ?? 45
+  const stockoutProjection = Array.from({ length: 7 }, (_, day) => {
+    return skuMetrics.filter((s) => {
+      const ds = s.daily_sales ?? 0
+      if (ds <= 0) return false
+      const remainingStock = (s.stock ?? 0) + (s.in_transit ?? 0) - ds * (day + 1)
+      return remainingStock <= 0
+    }).length
+  })
+  const overstockProjection = Array.from({ length: 7 }, (_, day) => {
+    return skuMetrics.filter((s) => {
+      const ds = s.daily_sales ?? 0
+      if (ds <= 0) return false
+      const remainingStock = (s.stock ?? 0) + (s.in_transit ?? 0) - ds * (day + 1)
+      return remainingStock > 0 && remainingStock / ds > overstockThreshold
+    }).length
+  })
+
   return (
     <section className="card">
       <h2 className="card-title">库存预警（P1）</h2>
       {health && (
-        <div className="kpi-row" style={{ marginBottom: '0.9rem' }}>
-          <div className="kpi">
-            <div className="kpi-label">低库存 SKU</div>
-            <div className="kpi-value tabular">{health.low_stock_skus}</div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">高库存 SKU</div>
-            <div className="kpi-value kpi-value--risk tabular">
-              {health.overstock_skus}
-            </div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">平均总覆盖天数</div>
-            <div className="kpi-value tabular">
-              {health.avg_total_coverage_days?.toFixed(1) ?? '—'} 天
-            </div>
-          </div>
+        <div className="channel-summary" style={{ marginBottom: '0.9rem' }}>
+          <StatChip label="低库存 SKU" value={<span className="tabular">{health.low_stock_skus}</span>} tone="risk" />
+          <StatChip label="高库存 SKU" value={<span className="tabular">{health.overstock_skus}</span>} tone="structure" />
+          <StatChip label="平均覆盖天数" value={<span className="tabular">{health.avg_total_coverage_days?.toFixed(1) ?? '—'}</span>} />
         </div>
       )}
+      <div className="sparkline-stack">
+        <Sparkline
+          points={stockoutProjection}
+          title="未来7天断货风险"
+          subtitle="预计断货 SKU 数"
+          colorClass="sparkline-card--risk"
+          startLabel="明天"
+          endLabel="7天后"
+        />
+        <Sparkline
+          points={overstockProjection}
+          title="未来7天高库存残留"
+          subtitle={`阈值 ${overstockThreshold} 天`}
+          colorClass="sparkline-card--cool"
+          startLabel="明天"
+          endLabel="7天后"
+        />
+      </div>
       <h3>低库存</h3>
       {inv.low_stock_alerts?.length ? (
         <div className="data-table-wrap">

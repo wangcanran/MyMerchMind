@@ -25,12 +25,15 @@ export function ExperienceLibrary() {
   const [newNarrative, setNewNarrative] = useState('')
   const [newConfidence, setNewConfidence] = useState('medium')
   const [creating, setCreating] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 10
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
       const data = await fetchExperiences(statusFilter === 'all' ? undefined : statusFilter)
       setExperiences(data.experiences || [])
+      setCurrentPage(1)
     } finally {
       setLoading(false)
     }
@@ -113,7 +116,7 @@ export function ExperienceLibrary() {
       {loading && <p className="muted">加载中...</p>}
 
       <div className="experience-list">
-        {experiences.map((exp) => (
+        {experiences.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((exp) => (
           <div key={exp.experience_id} className={`experience-card experience-card--${exp.status}`}>
             <div className="experience-card__header" onClick={() => setExpandedId(expandedId === exp.experience_id ? null : exp.experience_id)}>
               <span className={`badge badge--${exp.status}`}>{exp.status}</span>
@@ -144,6 +147,14 @@ export function ExperienceLibrary() {
 
       {!loading && experiences.length === 0 && (
         <p className="muted">暂无经验记录。策略反馈后会自动生成经验。</p>
+      )}
+
+      {experiences.length > PAGE_SIZE && (
+        <div className="pagination">
+          <button type="button" className="btn btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>上一页</button>
+          <span className="pagination-info">{currentPage} / {Math.ceil(experiences.length / PAGE_SIZE)}</span>
+          <button type="button" className="btn btn-sm" disabled={currentPage >= Math.ceil(experiences.length / PAGE_SIZE)} onClick={() => setCurrentPage((p) => p + 1)}>下一页</button>
+        </div>
       )}
     </div>
   )

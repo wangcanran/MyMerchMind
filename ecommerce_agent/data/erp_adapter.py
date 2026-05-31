@@ -32,6 +32,18 @@ class ERPAdapter:
         items: List[Dict] = []
         for sku_id in sorted(self.data_source.skus.keys()):
             sku = self.data_source.skus[sku_id]
+            # 如果 prior_week/month 为 0 但有 price_history，从历史数据推算
+            prior_week = sku.get("prior_week_total_units") or 0
+            prior_month = sku.get("prior_month_total_units") or 0
+            history = sku.get("price_history")
+            if isinstance(history, list) and len(history) >= 14 and (prior_week == 0 or prior_month == 0):
+                sales_list = [int(r.get("daily_sales") or 0) for r in history if isinstance(r, dict)]
+                if prior_week == 0 and len(sales_list) >= 14:
+                    prior_week = sum(sales_list[-14:-7])
+                if prior_month == 0 and len(sales_list) >= 14:
+                    # 取最近7天之前的所有天数（最多30天），作为"上期"参照
+                    prev_days = sales_list[max(0, len(sales_list) - 37):-7]
+                    prior_month = sum(prev_days) if prev_days else 0
             items.append({
                 "sku_id": sku_id,
                 "name": sku["name"],
@@ -44,10 +56,10 @@ class ERPAdapter:
                 "channel_sales": sku["channel_sales"],
                 "conversion_rate": sku["conversion_rate"],
                 "stock_age_days": sku["stock_age_days"],
-                "review_snippets": sku["review_snippets"],
-                "prior_week_total_units": sku["prior_week_total_units"],
-                "prior_month_total_units": sku["prior_month_total_units"],
-                "price_history": sku.get("price_history"),
+                "review_snippets": sku.get("review_snippets") or [],
+                "prior_week_total_units": prior_week,
+                "prior_month_total_units": prior_month,
+                "price_history": history,
             })
         return items
 

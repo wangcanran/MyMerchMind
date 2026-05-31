@@ -10,7 +10,9 @@ function getStoredErpData(): unknown[] | null {
     if (!raw) return null
     const data = JSON.parse(raw)
     return Array.isArray(data) && data.length > 0 ? data : null
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 function getStoredCompetitorData(): unknown[] | null {
@@ -19,7 +21,9 @@ function getStoredCompetitorData(): unknown[] | null {
     if (!raw) return null
     const data = JSON.parse(raw)
     return Array.isArray(data) && data.length > 0 ? data : null
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 function getStoredPriceHistoryData(): unknown[] | null {
@@ -28,10 +32,11 @@ function getStoredPriceHistoryData(): unknown[] | null {
     if (!raw) return null
     const data = JSON.parse(raw)
     return Array.isArray(data) && data.length > 0 ? data : null
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
-/** 将价格历史合并到 ERP 数据中（若 ERP 数据存在） */
 function mergeHistoryIntoErp(erpData: Record<string, unknown>[]): Record<string, unknown>[] {
   const historyData = getStoredPriceHistoryData()
   if (!historyData) return erpData
@@ -68,6 +73,36 @@ function toSearchParams(p: ReportParams): string {
   return u.toString()
 }
 
+async function readJson<T>(response: Response): Promise<T> {
+  return response.json() as Promise<T>
+}
+
+async function readError(response: Response): Promise<string> {
+  try {
+    const data = (await response.json()) as { detail?: string; message?: string }
+    return data.detail || data.message || `HTTP ${response.status}`
+  } catch {
+    const text = await response.text()
+    return text || `HTTP ${response.status}`
+  }
+}
+
+async function postJson<T>(path: string, body: Record<string, unknown>): Promise<T> {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    throw new Error(await readError(response))
+  }
+
+  return readJson<T>(response)
+}
+
 function reportJsonBody(p: ReportParams): Record<string, unknown> {
   const sel = (p.selection_requirements ?? '').trim()
   const body: Record<string, unknown> = {
@@ -85,20 +120,39 @@ function reportJsonBody(p: ReportParams): Record<string, unknown> {
   ) {
     body.target_gross_margin = p.target_gross_margin
   }
-  // 附带 ERP 数据（合并价格历史）
+
   const erpData = getStoredErpData()
   if (erpData) {
     body.erp_data = mergeHistoryIntoErp(erpData as Record<string, unknown>[])
   } else if (getStoredPriceHistoryData()) {
-    // 没有 ERP 数据但有历史数据：构造最小 ERP 记录以携带历史
     const historyData = getStoredPriceHistoryData() as Record<string, unknown>[]
-    body.erp_data = historyData.map((item) => ({
-      sku_id: item.sku_id,
-      name: item.name || item.sku_id,
-      price_history: item.records || item.price_history,
-    }))
+    body.erp_data = historyData.map((item) => {
+      const records = (item.records || item.price_history) as Record<string, unknown>[] | undefined
+      // Derive daily_sales from last record if not provided directly
+      let dailySales = Number(item.daily_sales) || 0
+      let price = Number(item.current_price || item.price) || 0
+      if (Array.isArray(records) && records.length > 0 && !dailySales) {
+        const last7 = records.slice(-7)
+        dailySales = Math.round(last7.reduce((s, r) => s + (Number(r.daily_sales) || 0), 0) / last7.length)
+        if (!price) price = Number(records[records.length - 1].price) || 0
+      }
+      return {
+        sku_id: item.sku_id,
+        name: item.name || item.sku_id,
+        price,
+        cost_price: Number(item.cost_price) || 0,
+        daily_sales: dailySales,
+        stock: Number(item.stock) || Math.round(dailySales * 10),
+        in_transit: Number(item.in_transit) || 0,
+        return_rate: Number(item.return_rate) || 0,
+        channel_sales: item.channel_sales || { live: Math.round(dailySales * 0.4), private: Math.round(dailySales * 0.35), shelf: Math.round(dailySales * 0.25) },
+        conversion_rate: Number(item.conversion_rate) || 0,
+        stock_age_days: Number(item.stock_age_days) || 0,
+        price_history: records,
+      }
+    })
   }
-  // 附带竞品数据
+
   const competitorData = getStoredCompetitorData()
   if (competitorData) {
     body.competitors_data = competitorData
@@ -107,7 +161,72 @@ function reportJsonBody(p: ReportParams): Record<string, unknown> {
 }
 
 function shouldUsePost(p: ReportParams): boolean {
-  return (p.selection_requirements ?? '').trim().length > 0 || getStoredErpData() !== null || getStoredCompetitorData() !== null || getStoredPriceHistoryData() !== null
+  return (
+    (p.selection_requirements ?? '').trim().length > 0 ||
+    getStoredErpData() !== null ||
+    getStoredCompetitorData() !== null ||
+    getStoredPriceHistoryData() !== null
+  )
+}
+
+export async function fetchReportWithProgress(
+  p: ReportParams,
+  onProgress: (step: string, current: number, total: number) => void,
+): Promise<AgentReport> {
+  const body = reportJsonBody(p)
+  const res = await fetch('/api/report/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    throw new Error(await readError(res))
+  }
+  const reader = res.body?.getReader()
+  if (!reader) throw new Error('No response body')
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let result: AgentReport | null = null
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split('\n\n')
+    buffer = lines.pop() ?? ''
+    for (const line of lines) {
+      const dataLine = line.replace(/^data: /, '').trim()
+      if (!dataLine) continue
+      try {
+        const msg = JSON.parse(dataLine)
+        if (msg.type === 'progress') {
+          onProgress(msg.step, msg.current, msg.total)
+        } else if (msg.type === 'result') {
+          result = msg.data as AgentReport
+        } else if (msg.type === 'error') {
+          throw new Error(msg.message)
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message !== dataLine) throw e
+      }
+    }
+  }
+  // Process any remaining data in buffer
+  if (buffer.trim()) {
+    const dataLine = buffer.replace(/^data: /, '').trim()
+    if (dataLine) {
+      try {
+        const msg = JSON.parse(dataLine)
+        if (msg.type === 'result') {
+          result = msg.data as AgentReport
+        } else if (msg.type === 'error') {
+          throw new Error(msg.message)
+        }
+      } catch { /* ignore parse errors on trailing buffer */ }
+    }
+  }
+  if (!result) throw new Error('未收到报告结果')
+  return result
 }
 
 export async function fetchReport(p: ReportParams): Promise<AgentReport> {
@@ -118,18 +237,16 @@ export async function fetchReport(p: ReportParams): Promise<AgentReport> {
       body: JSON.stringify(reportJsonBody(p)),
     })
     if (!res.ok) {
-      const text = await res.text()
-      throw new Error(text || `HTTP ${res.status}`)
+      throw new Error(await readError(res))
     }
-    return res.json() as Promise<AgentReport>
+    return readJson<AgentReport>(res)
   }
   const q = toSearchParams(p)
   const res = await fetch(`/api/report?${q}`)
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || `HTTP ${res.status}`)
+    throw new Error(await readError(res))
   }
-  return res.json() as Promise<AgentReport>
+  return readJson<AgentReport>(res)
 }
 
 export async function fetchReportMarkdown(p: ReportParams): Promise<string> {
@@ -140,18 +257,35 @@ export async function fetchReportMarkdown(p: ReportParams): Promise<string> {
       body: JSON.stringify(reportJsonBody(p)),
     })
     if (!res.ok) {
-      const text = await res.text()
-      throw new Error(text || `HTTP ${res.status}`)
+      throw new Error(await readError(res))
     }
-    const data = (await res.json()) as { markdown: string }
+    const data = await readJson<{ markdown: string }>(res)
     return data.markdown
   }
   const q = toSearchParams(p)
   const res = await fetch(`/api/report/markdown?${q}`)
   if (!res.ok) {
-    const text = await res.text()
-    throw new Error(text || `HTTP ${res.status}`)
+    throw new Error(await readError(res))
   }
-  const data = (await res.json()) as { markdown: string }
+  const data = await readJson<{ markdown: string }>(res)
   return data.markdown
+}
+
+export async function login(username: string, password: string): Promise<{ message: string }> {
+  return postJson<{ message: string }>('/api/login', { username, password })
+}
+
+export async function register(
+  username: string,
+  password: string,
+): Promise<{ message: string }> {
+  return postJson<{ message: string }>('/api/register', { username, password })
+}
+
+export async function fetchHealth(): Promise<{ status: string }> {
+  const res = await fetch('/api/health')
+  if (!res.ok) {
+    throw new Error(await readError(res))
+  }
+  return readJson<{ status: string }>(res)
 }

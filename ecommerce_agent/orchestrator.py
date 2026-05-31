@@ -6,8 +6,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 from .agents.category_management_agent import CategoryManagementAgent
-from .agents.dynamic_pricing_agent import DynamicPricingAgent, normalize_target_gross_margin
-from .agents.inventory_management_agent import InventoryManagementAgent
+from .agents.pricing_tools import normalize_target_gross_margin
 from .agents.sales_review_agent import SalesReviewAgent
 from .config.data_sources import DataSourceSettings, load_data_source_settings
 from .config.return_rate_thresholds import high_return_rate_pct, is_high_return
@@ -71,6 +70,7 @@ class DemoOrchestrator:
         use_llm: bool = False,
         target_gross_margin: Optional[float] = None,
         uploaded_competitor_products: Optional[List[Dict]] = None,
+        progress_callback: Optional[callable] = None,
     ):
         self.seed = seed
         self.top_n = top_n
@@ -84,6 +84,7 @@ class DemoOrchestrator:
         self.enable_category_management = enable_category_management
         self.enable_pricing = enable_pricing
         self._target_gross_margin = target_gross_margin
+        self._progress_callback = progress_callback
 
         # 用户上传的 SKU 级竞品数据：[{match_sku, competitors: [{title, price, sales}]}]
         # 按 match_sku 建索引，供旧品定价时直接查找竞品价格和销量。
@@ -106,16 +107,19 @@ class DemoOrchestrator:
             competitors_label = "file"
         else:
             competitors_label = "mock"
-        print(
-            f"[orchestrator] data sources -> {ds.describe()} "
-            f"(competitors_source={ds.competitors_source})"
-        )
         self.data_integration = {
-            "erp": "file" if ds.erp_json else "mock",
+            "erp": "uploaded" if erp_adapter is not None else ("file" if ds.erp_json else "mock"),
             "trends": "file" if ds.trends_json else "mock",
-            "competitors": competitors_label,
+            "competitors": "uploaded" if uploaded_competitor_products else competitors_label,
             "tags": "file" if ds.tags_json else "mock",
         }
+        print(
+            f"[orchestrator] data sources -> "
+            f"erp={self.data_integration['erp']}, "
+            f"trends={self.data_integration['trends']}, "
+            f"competitors={self.data_integration['competitors']}, "
+            f"tags={self.data_integration['tags']}"
+        )
         self._competitors_source = ds.competitors_source
 
         sku_table = load_erp_skus_from_json(ds.erp_json) if ds.erp_json else None
@@ -187,16 +191,7 @@ class DemoOrchestrator:
         self.llm_enabled = bool(effective_llm)
         self.llm_client = llm_client
 
-        self.sales_agent = SalesReviewAgent(llm_client=llm_client, use_llm=effective_llm)
         self.category_agent = CategoryManagementAgent(llm_client=llm_client, use_llm=effective_llm)
-        self.inventory_management_agent = InventoryManagementAgent(
-            llm_client=llm_client,
-            use_llm=effective_llm,
-        )
-        self.dynamic_pricing_agent = DynamicPricingAgent(
-            llm_client=llm_client,
-            use_llm=effective_llm,
-        )
         # SKU 级竞品价格来源：默认走 mock 文件；taobao 模式下复用适配器（接口签名一致）。
         self.competitor_pricing_api = (
             self._taobao_competitor
@@ -204,7 +199,12 @@ class DemoOrchestrator:
             else CompetitorPricingAPI()
         )
 
+    def _emit_progress(self, step: str, current: int, total: int):
+        if self._progress_callback:
+            self._progress_callback(step, current, total)
+
     def run(self) -> Dict:
+        self._emit_progress("加载数据", 1, 8)
         sku_metrics = deep_copy_sku_metrics(self.erp_adapter.get_all_skus())
         top_trends = self.trends_adapter.get_top_trends(limit=max(self.top_n, 5))
         growing_trends = self.trends_adapter.get_growing_trends(limit=max(self.top_n, 5))
@@ -257,6 +257,7 @@ class DemoOrchestrator:
 
         product_selection: Dict[str, object] = {"skipped": True, "llm_error": None}
         suggested_categories: List[str] = []
+        self._emit_progress("选品策略", 2, 8)
         if self.enable_selection:
             def _fallback_recommendation() -> Dict[str, object]:
                 kw = [str(x.get("keyword", "")).strip() for x in growing_trends[:3] if isinstance(x, dict)]
@@ -454,6 +455,7 @@ class DemoOrchestrator:
                         }
                     ]
                 }
+            self._emit_progress("品类管理", 3, 8)
             category_management = self.category_agent.analyze(
                 sku_metrics=sku_metrics,
                 product_selection=ps_payload,
@@ -469,30 +471,52 @@ class DemoOrchestrator:
         if self.enable_selection and isinstance(product_selection, dict) and not product_selection.get("skipped"):
             self._finalize_new_product_planning(product_selection, category_management)
 
+        self._emit_progress("定价分析", 4, 8)
         pricing: Dict[str, object] = {"skipped": True}
         if self.enable_pricing:
-            pricing = self.run_pricing_analysis(
-                sku_metrics,
-                product_selection=product_selection,
-                experiences=retrieved_experiences,
-            )
+            pricing = self._run_pricing_v2(sku_metrics, retrieved_experiences)
 
-        sales_review = self.sales_agent.analyze(
-            sku_metrics=sku_metrics,
-            top_trends=top_trends,
-            growing_trends=growing_trends,
-            top_n=self.top_n,
-        )
-        inventory_bundle = self.inventory_management_agent.analyze(
-            sku_metrics=sku_metrics,
-            replenishment_cycle_days=self.replenishment_cycle_days,
-            overstock_days=self.overstock_days,
-            limit=self.top_n,
-        )
-        inventory_review = inventory_bundle.get("inventory_review", {})
-        slow_moving = inventory_bundle.get("slow_moving", {})
-        replenishment = inventory_bundle.get("replenishment", {})
-        inventory_management = inventory_bundle.get("management_summary", {})
+        self._emit_progress("销售分析", 5, 8)
+        from .agents.sales_agent_v2 import SalesAgentV2
+        sales_agent_v2 = SalesAgentV2(self.llm_client)
+        sales_review = sales_agent_v2.analyze(sku_metrics, top_trends, growing_trends, retrieved_experiences)
+
+        self._emit_progress("库存分析", 6, 8)
+        from .agents.inventory_agent_v2 import InventoryAgentV2
+        inv_agent = InventoryAgentV2(self.llm_client, self.replenishment_cycle_days, self.overstock_days)
+        inv_results = []
+        for idx, sku in enumerate(sku_metrics):
+            self._emit_progress(f"库存分析 ({idx+1}/{len(sku_metrics)})", 6, 8)
+            inv_results.append(inv_agent.analyze_sku(sku, retrieved_experiences))
+
+        # 从 V2 结果构建兼容旧格式的输出
+        low_stock_alerts = [r for r in inv_results if r["action"] == "replenish"]
+        overstock_alerts = [r for r in inv_results if r["action"] == "clearance"]
+        inventory_review = {
+            "low_stock_alerts": [{
+                "sku_id": r["sku_id"], "name": r["name"],
+                "coverage_days": r["coverage_days"], "total_coverage_days": r["total_coverage_days"],
+                "suggest_replenish_qty": r["qty"], "urgency_score": 80 if r["coverage_days"] < 3 else 60,
+                "avg_daily_7d": r["avg_daily_7d"], "sales_volatility": r["sales_volatility"],
+                "daily_sales": r["avg_daily_7d"],
+            } for r in low_stock_alerts],
+            "overstock_alerts": [{
+                "sku_id": r["sku_id"], "name": r["name"],
+                "total_coverage_days": r["total_coverage_days"],
+                "recommended_action": r["strategy"], "pressure_score": 60,
+                "daily_sales": r["avg_daily_7d"],
+            } for r in overstock_alerts],
+            "inventory_health": {
+                "low_stock_skus": len(low_stock_alerts),
+                "overstock_skus": len(overstock_alerts),
+                "healthy_skus": len(sku_metrics) - len(low_stock_alerts) - len(overstock_alerts),
+                "avg_total_coverage_days": round(sum(r["total_coverage_days"] for r in inv_results) / max(len(inv_results), 1), 1),
+            },
+            "recommendations": [r["reasoning"] for r in inv_results if r["action"] != "hold"][:3],
+        }
+        slow_moving = {"slow_moving_skus": [], "recommendations": []}
+        replenishment = {"replenishment_rows": low_stock_alerts, "recommendations": []}
+        inventory_management = {}
 
         memory_snapshot = {
             "active_feedback_count": len(self.memory.list_active_items()),
@@ -510,56 +534,40 @@ class DemoOrchestrator:
             ],
         }
 
-        pricing_recs: List[str] = []
-        pricing_rows = [r for r in (pricing.get("pricing_suggestions") or []) if isinstance(r, dict)]
-
-        def _pricing_gap_abs(row: Dict) -> float:
-            cur = float(row.get("current_price") or 0)
-            sug = float(row.get("suggested_price") or 0)
-            if not cur or not sug:
-                return 0.0
-            return abs(float(sug) - float(cur)) / float(cur)
-
-        ranked_pr = sorted(
-            (
-                r
-                for r in pricing_rows
-                if r.get("current_price") is not None
-                and r.get("suggested_price") is not None
-                and float(r.get("current_price") or 0) != float(r.get("suggested_price") or 0)
-            ),
-            key=_pricing_gap_abs,
-            reverse=True,
+        self._emit_progress("生成行动建议", 7, 8)
+        # ── 结构化 Action 整合（SKU 级别）──────────────────────────────────
+        action_registry = self._build_action_registry(
+            sku_metrics, sales_review, inventory_review,
+            slow_moving, replenishment, pricing, category_management
         )
-        price_action_cap = max(1, int(self.top_n))
-        for r in ranked_pr[:price_action_cap]:
-            sid = str(r.get("sku_id") or "").strip()
-            name = str(r.get("name") or "").strip()
-            label = f"{sid} {name}".strip() if sid else name
-            if not label:
-                continue
-            sug = r.get("suggested_price")
-            cur = r.get("current_price")
-            strategy = str(r.get("strategy") or "").strip()
-            if sug and cur and cur != sug:
-                pricing_recs.append(
-                    f"定价建议：{label} 现售 ¥{cur}，建议调至 ¥{sug}（{strategy}）。"
-                )
+        action_registry = self._resolve_conflicts(action_registry)
+        scored_actions = self._prioritize_actions(action_registry)
+        structured_actions = self._generate_action_text(scored_actions)
 
+        # 非 SKU 级别的建议（品类、新品企划、LLM 行动要点）
         planning_recs = self._new_planning_action_lines(product_selection)
-        high_return_recs = DemoOrchestrator._high_return_disposition_lines(sku_metrics)
+        category_recs = [r for r in (category_management.get("recommendations") or []) if isinstance(r, str)]
+        llm_bullets = []
+        if isinstance(sales_review.get("llm_executive_brief"), dict):
+            llm_bullets = sales_review["llm_executive_brief"].get("action_bullets", [])
 
-        actions = self._merge_actions(
-            product_selection.get("recommendations", []),
-            category_management.get("recommendations", []),
-            pricing_recs,
-            high_return_recs,
-            planning_recs,
-            sales_review.get("recommendations", []),
-            inventory_review.get("recommendations", []),
-            slow_moving.get("recommendations", []),
-            replenishment.get("recommendations", []),
+        # 收集被阻止的 SKU，过滤 llm_bullets 中与之矛盾的内容
+        blocked_skus = set()
+        for sid, entry in action_registry.items():
+            if entry.get("blocked_decisions"):
+                blocked_skus.add(sid)
+        filtered_llm_bullets = [
+            b for b in llm_bullets
+            if not any(sid in b for sid in blocked_skus)
+        ]
+
+        actions = (
+            structured_actions
+            + [f"【企划】{r}" for r in planning_recs]
+            + [f"【品类】{r}" for r in category_recs]
+            + [f"【LLM】{b}" for b in filtered_llm_bullets]
         )
+
         actions_display = build_actions_display(actions, as_of_iso=str(self.as_of or ""))
 
         result: Dict = {
@@ -600,6 +608,7 @@ class DemoOrchestrator:
             },
             "product_selection": product_selection,
             "category_management": category_management,
+
             "pricing": pricing,
             "sales_review": sales_review,
             "inventory_review": inventory_review,
@@ -612,6 +621,7 @@ class DemoOrchestrator:
             # 内部快照字段：供 draft 生成器使用，不对外文档承诺
             "_sku_metrics_snapshot": sku_metrics,
             "_top_trends": top_trends,
+            "_daily_series": self._build_daily_series(sku_metrics),
         }
 
         # ── 经验 draft 自动生成（失败不中断主流程）────────────────────────
@@ -633,6 +643,49 @@ class DemoOrchestrator:
             except Exception as _exp_err:  # noqa: BLE001
                 result["memory_snapshot"]["experience_draft_error"] = str(_exp_err)
 
+        self._emit_progress("完成", 8, 8)
+        return result
+
+    def _build_daily_series(self, sku_metrics: List[Dict]) -> Dict:
+        """从 SKU 的 price_history 聚合出逐日总销量和逐渠道销量序列。"""
+        from collections import defaultdict
+        daily_totals: Dict[str, int] = defaultdict(int)
+        channel_dailies: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
+        has_history = 0
+        for sku in sku_metrics:
+            history = sku.get("price_history")
+            if not isinstance(history, list):
+                continue
+            has_history += 1
+            ch_sales = sku.get("channel_sales") or {}
+            total_ch = sum(ch_sales.values()) or 1
+            for record in history:
+                if not isinstance(record, dict):
+                    continue
+                d = record.get("date", "")
+                ds = int(record.get("daily_sales") or 0)
+                daily_totals[d] += ds
+                # 优先使用逐日渠道数据，否则按比例拆分
+                ch_daily = record.get("channel_daily")
+                if isinstance(ch_daily, dict):
+                    for ch_name, ch_val in ch_daily.items():
+                        channel_dailies[ch_name][d] += int(ch_val)
+                else:
+                    for ch_name, ch_val in ch_sales.items():
+                        channel_dailies[ch_name][d] += int(ds * ch_val / total_ch)
+
+        # 按日期排序，取最近 14 天
+        sorted_dates = sorted(daily_totals.keys())[-14:]
+        result = {
+            "dates": sorted_dates,
+            "total_sales": [daily_totals[d] for d in sorted_dates],
+            "channels": {
+                ch: [channel_dailies[ch].get(d, 0) for d in sorted_dates]
+                for ch in channel_dailies
+            },
+        }
+        print(f"[_build_daily_series] skus={len(sku_metrics)}, with_history={has_history}, dates={len(sorted_dates)}, channels={list(result['channels'].keys())}, sample_total={result['total_sales'][:3]}, sample_live={result['channels'].get('live', [])[:3]}")
         return result
 
     # ── 经验检索辅助（复用 experience_store 里的推导函数）──────────────
@@ -790,11 +843,289 @@ class DemoOrchestrator:
                 continue
             label = f"{sid} {nm}".strip() if sid else nm
             rr = float(row.get("return_rate") or 0) * 100.0
+            ds = int(row.get("daily_sales") or 0)
+            stock = int(row.get("stock") or 0)
             out.append(
-                f"高退货处置：{label} · 退货率 {rr:.1f}% — "
-                "暂停加量推广/投流，联动质检与详情页复核，必要时调价或下架测款。"
+                f"高退货处置：{label} · 退货率 {rr:.1f}%，日销 {ds} 件，库存 {stock} 件 — "
+                f"立即暂停加量推广/投流，启动质检+详情页复核。"
             )
         return out
+
+    def _build_action_registry(self, sku_metrics, sales_review, inventory_review,
+                                slow_moving, replenishment, pricing, category_management):
+        """按 SKU 聚合所有模块的结构化决策。"""
+        from .agents.sales_review_agent import SalesReviewAgent
+        registry: Dict[str, Dict] = {}
+
+        for alert in (inventory_review.get("low_stock_alerts") or []):
+            sid = alert.get("sku_id")
+            if not sid:
+                continue
+            registry.setdefault(sid, {"decisions": [], "data": {}})
+            if alert.get("suggest_replenish_qty", 0) > 0:
+                registry[sid]["decisions"].append({
+                    "module": "inventory", "type": "replenish",
+                    "qty": alert["suggest_replenish_qty"],
+                    "urgency": alert.get("urgency_score", 0),
+                    "coverage_days": alert.get("coverage_days", 0),
+                })
+
+        for alert in (inventory_review.get("overstock_alerts") or []):
+            sid = alert.get("sku_id")
+            if not sid:
+                continue
+            registry.setdefault(sid, {"decisions": [], "data": {}})
+            registry[sid]["decisions"].append({
+                "module": "inventory", "type": "clearance",
+                "action": alert.get("recommended_action", "满减促销"),
+                "pressure": alert.get("pressure_score", 0),
+                "coverage_days": alert.get("total_coverage_days", 0),
+                "strategy": alert.get("recommended_action", "满减促销"),
+            })
+
+        for r in (pricing.get("pricing_suggestions") or []):
+            sid = r.get("sku_id")
+            if not sid:
+                continue
+            cur = r.get("current_price")
+            sug = r.get("suggested_price")
+            if not cur or not sug or cur == sug:
+                continue
+            registry.setdefault(sid, {"decisions": [], "data": {}})
+            registry[sid]["decisions"].append({
+                "module": "pricing", "type": "reprice",
+                "from_price": cur, "to_price": sug,
+                "strategy": r.get("strategy", ""),
+                "role": r.get("role", ""),
+                "cost_price": r.get("cost_price", 0),
+            })
+
+        for sku in (sales_review.get("high_return_skus") or []):
+            sid = sku.get("sku_id")
+            if not sid:
+                continue
+            registry.setdefault(sid, {"decisions": [], "data": {}})
+            registry[sid]["decisions"].append({
+                "module": "sales_review", "type": "high_return",
+                "return_rate_pct": sku.get("return_rate_pct", 0),
+            })
+
+        for item in (slow_moving.get("slow_moving_skus") or []):
+            sid = item.get("sku_id")
+            if not sid:
+                continue
+            registry.setdefault(sid, {"decisions": [], "data": {}})
+            registry[sid]["decisions"].append({
+                "module": "slow_moving", "type": "clearance",
+                "strategy": item.get("strategy", "满减促销"),
+                "stock_age_days": item.get("stock_age_days", 0),
+                "coverage_days": 0,
+            })
+
+        sku_map = {str(s.get("sku_id", "")): s for s in sku_metrics}
+        sku_trends = SalesReviewAgent._compute_sku_trends(sku_metrics)
+        for sid in registry:
+            s = sku_map.get(sid, {})
+            registry[sid]["data"] = {
+                "name": s.get("name", ""),
+                "daily_sales": s.get("daily_sales", 0),
+                "stock": s.get("stock", 0),
+                "in_transit": s.get("in_transit", 0),
+                "return_rate": float(s.get("return_rate") or 0),
+                "trend": sku_trends.get(sid, {}).get("trend", "unknown"),
+                "growth_7d_pct": sku_trends.get(sid, {}).get("growth_7d_pct", 0),
+                "price": s.get("price", 0),
+                "cost_price": s.get("cost_price", 0),
+            }
+        return registry
+
+    def _resolve_conflicts(self, registry: Dict) -> Dict:
+        """检测并解决同一 SKU 的决策冲突。"""
+        for sid, entry in registry.items():
+            decisions = entry["decisions"]
+            data = entry["data"]
+            types = {d["type"] for d in decisions}
+            stock = data.get("stock", 0)
+            in_transit = data.get("in_transit", 0)
+            ds = data.get("daily_sales", 0)
+            # 用可售库存（不含在途）计算覆盖天数，与库存 Agent 口径一致
+            coverage = stock / ds if ds > 0 else 999
+
+            # ── 规则1: 补货 + 去化/清仓 → 看趋势决定 ──
+            if "replenish" in types and "clearance" in types:
+                if data["trend"] == "declining":
+                    decisions[:] = [d for d in decisions if d["type"] != "replenish"]
+                    entry["conflict_resolved"] = "趋势下降，取消补货保留清仓"
+                else:
+                    decisions[:] = [d for d in decisions if d["type"] != "clearance"]
+                    entry["conflict_resolved"] = "趋势正常，保留补货取消清仓"
+
+            # ── 规则2: 补货 + 高退货 → 先解决退货再补货 ──
+            if "replenish" in types and "high_return" in types:
+                for d in decisions:
+                    if d["type"] == "replenish":
+                        d["condition"] = "待退货率降至8%以下后再执行补货"
+                        d["priority_override"] = "deferred"
+
+            # ── 规则3: 非清仓调价 + 清仓 → 清仓优先 ──
+            if "reprice" in types and "clearance" in types:
+                for d in decisions:
+                    if d["type"] == "reprice" and "清仓" not in str(d.get("strategy", "")):
+                        d["priority_override"] = "superseded_by_clearance"
+
+            # ── 规则4: 缺货 SKU 不得调价（覆盖 < 3 天不降价，覆盖 < 5 天不涨价）──
+            if "reprice" in types and coverage < 5:
+                for d in decisions:
+                    if d["type"] == "reprice":
+                        from_p = float(d.get("from_price") or 0)
+                        to_p = float(d.get("to_price") or 0)
+                        if to_p < from_p and coverage < 3:
+                            d["priority_override"] = "blocked_low_stock"
+                            entry.setdefault("conflict_resolved", "")
+                            entry["conflict_resolved"] += f"；库存仅覆盖{coverage:.1f}天，阻止降价（缺货不降价）"
+                        elif to_p > from_p and coverage < 5:
+                            d["priority_override"] = "blocked_low_stock"
+                            entry.setdefault("conflict_resolved", "")
+                            entry["conflict_resolved"] += f"；库存仅覆盖{coverage:.1f}天，阻止涨价（缺货涨价抑制需求）"
+
+            # ── 规则5: 健康 SKU 不得无依据降价 ──
+            if "reprice" in types:
+                rr = data.get("return_rate", 0)
+                is_healthy = 7 <= coverage <= 45 and data["trend"] != "declining" and rr < 0.08
+                if is_healthy:
+                    for d in decisions:
+                        if d["type"] == "reprice":
+                            from_p = float(d.get("from_price") or 0)
+                            to_p = float(d.get("to_price") or 0)
+                            # 健康 SKU 降价需要有竞品驱动或清仓理由，否则阻止
+                            strategy = str(d.get("strategy", "")).lower()
+                            is_clearance = "清仓" in strategy or "clearance" in strategy
+                            if to_p < from_p and not is_clearance:
+                                drop_pct = (from_p - to_p) / from_p
+                                if drop_pct < 0.20:  # 降幅 < 20% 且非清仓 → 阻止
+                                    d["priority_override"] = "blocked_healthy"
+                                    entry.setdefault("conflict_resolved", "")
+                                    entry["conflict_resolved"] += "；健康SKU无清仓理由的降价已阻止"
+
+            # ── 规则6: 高退货触发下架评估时，取消同 SKU 的定价/满减建议 ──
+            if "high_return" in types:
+                hr_severe = any(d.get("return_rate_pct", 0) >= 12 for d in decisions if d["type"] == "high_return")
+                if hr_severe:
+                    for d in decisions:
+                        if d["type"] in ("reprice", "clearance"):
+                            d["priority_override"] = "blocked_pending_diagnosis"
+                            entry.setdefault("conflict_resolved", "")
+                            if "待P0诊断完成" not in entry.get("conflict_resolved", ""):
+                                entry["conflict_resolved"] += "；退货率≥12%待P0诊断，暂停定价/促销动作"
+
+        return registry
+
+    def _prioritize_actions(self, registry: Dict) -> List[Dict]:
+        """基于数据计算优先级分数。被阻止的决策移入 blocked 列表不参与排序。"""
+        scored: List[Dict] = []
+        blocked: List[Dict] = []
+        BLOCKED_OVERRIDES = ("superseded_by_clearance", "blocked_low_stock", "blocked_healthy", "blocked_pending_diagnosis")
+        for sid, entry in registry.items():
+            data = entry["data"]
+            for d in entry["decisions"]:
+                override = d.get("priority_override", "")
+                if override in BLOCKED_OVERRIDES:
+                    blocked.append({"sku_id": sid, "decision": d, "data": data, "block_reason": override})
+                    continue
+                score = 0.0
+                if d["type"] == "high_return" and d.get("return_rate_pct", 0) >= 12:
+                    score = 95
+                elif d["type"] == "high_return":
+                    score = 85
+                elif d["type"] == "replenish" and d.get("priority_override") == "deferred":
+                    score = 40
+                elif d["type"] == "replenish" and d.get("urgency", 0) >= 80:
+                    score = 90
+                elif d["type"] == "replenish":
+                    score = 70 + float(d.get("urgency", 0)) * 0.2
+                elif d["type"] == "reprice":
+                    score = 60
+                elif d["type"] == "clearance":
+                    score = 50 + float(d.get("pressure", 0)) * 0.3
+                scored.append({
+                    "sku_id": sid, "decision": d, "data": data,
+                    "score": score, "conflict_note": entry.get("conflict_resolved"),
+                })
+        scored.sort(key=lambda x: -x["score"])
+        # 将 blocked 决策从 registry 中移除，防止其他模块误读
+        for item in blocked:
+            sid = item["sku_id"]
+            if sid in registry:
+                registry[sid]["decisions"] = [
+                    d for d in registry[sid]["decisions"]
+                    if d.get("priority_override", "") not in BLOCKED_OVERRIDES
+                ]
+                registry[sid].setdefault("blocked_decisions", []).append(item["decision"])
+        return scored
+
+    def _generate_action_text(self, scored_actions: List[Dict]) -> List[str]:
+        """从结构化决策生成 action 文本，含依赖关系标注。"""
+        actions: List[str] = []
+
+        # 建立 SKU→Action 类型索引，用于关联标注
+        sku_types: Dict[str, List[str]] = {}
+        for item in scored_actions:
+            sid = item["sku_id"]
+            sku_types.setdefault(sid, []).append(item["decision"]["type"])
+
+        for item in scored_actions[:20]:
+            d = item["decision"]
+            data = item["data"]
+            sid = item["sku_id"]
+            label = f"{sid} {data['name']}"
+
+            # 关联 Action 标注
+            related = [t for t in sku_types.get(sid, []) if t != d["type"]]
+            related_str = "、".join(f"{t}({sid})" for t in related[:3]) if related else "无"
+
+            if d["type"] == "high_return":
+                text = (
+                    f"高退货处置：{label} · 退货率 {d['return_rate_pct']}%，"
+                    f"日销 {data['daily_sales']} 件，库存 {data['stock']} 件 — 立即暂停推广，启动质检。"
+                    f"\n【后置影响】若诊断结果=下架 → 取消该SKU所有后续Action"
+                    f"\n【取消触发】诊断=材质问题且无法修复"
+                    f"\n【关联】{related_str}"
+                )
+            elif d["type"] == "replenish":
+                condition = d.get("condition", "库存低于补货点")
+                text = f"补货：{label}，可售 {d['coverage_days']} 天，建议补 {d['qty']} 件。"
+                text += f"\n【前置条件】{condition}"
+                if data["trend"] == "declining":
+                    text += f"\n【风险】近7天趋势下降{data['growth_7d_pct']:+.1f}%，需确认需求侧无问题"
+                text += f"\n【取消触发】趋势持续declining超14天 / 高退货处置=下架"
+                text += f"\n【关联】{related_str}"
+            elif d["type"] == "reprice":
+                cost = float(d.get("cost_price") or 0)
+                to_price = float(d.get("to_price") or 0)
+                from_price = float(d.get("from_price") or 0)
+                margin = round((to_price - cost) / to_price * 100, 1) if to_price > 0 and cost > 0 else 0
+                drop_pct = round(abs(to_price - from_price) / from_price * 100, 1) if from_price > 0 else 0
+                text = (
+                    f"定价建议：{label} ¥{int(from_price)} → ¥{int(to_price)}（{d.get('strategy', '')}），"
+                    f"降幅 {drop_pct}%，调价后毛利率 {margin}%，成本 ¥{int(cost)}。"
+                    f"\n【前置条件】高退货处置未触发或诊断≠下架；缺货已解除（coverage≥3天）"
+                    f"\n【取消触发】高退货处置=下架 / 竞品降价致毛利低于底线"
+                    f"\n【关联】{related_str}"
+                )
+            elif d["type"] == "clearance":
+                text = (
+                    f"去化：{label}，库存覆盖 {d.get('coverage_days', '?')} 天，建议 {d.get('strategy', '满减促销')}。"
+                    f"\n【前置条件】库存覆盖>{self.overstock_days}天或转化率低于阈值"
+                    f"\n【取消触发】销量突然提升 / 高退货处置=下架"
+                    f"\n【关联】{related_str}"
+                )
+            else:
+                continue
+
+            if item.get("conflict_note"):
+                text += f"\n【冲突解决】{item['conflict_note']}"
+            actions.append(text)
+        return actions
 
     @staticmethod
     def _new_planning_action_lines(product_selection: object) -> List[str]:
@@ -972,15 +1303,7 @@ class DemoOrchestrator:
                 "stock": 0,
                 "return_rate": 0.0,
             }
-            intel = self.dynamic_pricing_agent.analyze(
-                product_info=pseudo,
-                competitor_prices=prices,
-                store_cost_price=0.0,
-                seasonal_factor=0.8,
-                competitor_products=products,
-                pricing_mode="market_intel",
-                target_gross_margin=self._target_gross_margin,
-            )
+            intel = self._market_intel_for_new_product(pseudo, prices, products)
             intel["competitor_search_query"] = query
             intel["competitor_search_used_planning_suffix"] = bool(suffix)
             entries.append(
@@ -992,83 +1315,75 @@ class DemoOrchestrator:
             )
         npp["entries"] = entries
 
-    def run_pricing_analysis(
-        self,
-        sku_metrics: List[Dict],
-        product_selection: Optional[Dict] = None,
-        experiences: Optional[List[Dict]] = None,
-    ) -> Dict:
-        """对 ERP 在架 SKU 跑竞品价与动态定价（恒为 ``executable``，旧品类现价微调）。
+    def _market_intel_for_new_product(self, pseudo: Dict, prices: List[float], products: List[Dict]) -> Dict:
+        """新品企划的市场情报（简化版，不走完整定价 Agent）。"""
+        from .agents.pricing_tools import PricingToolExecutor
+        executor = PricingToolExecutor(pseudo, prices, products)
+        summary = executor.execute("get_competitor_summary", {"sku_id": pseudo.get("name", "")})
+        margin = self._target_gross_margin or 0.45
+        sweet = summary.get("sweet_spot")
+        median = summary.get("median")
+        reference = sweet or median
+        implied_cost = round(reference * (1 - margin)) if reference else None
+        return {
+            "competitor_summary": summary,
+            "market_intel": {
+                "reference_band": f"¥{summary.get('p25', '?')}-¥{summary.get('p75', '?')}",
+                "sweet_spot": sweet,
+                "implied_cost_ceiling": implied_cost,
+                "disclaimer": "企划参考价，非锁价",
+            },
+            "pricing_stage": "market_intel",
+        }
 
-        新品企划（M3 ``approve_new``）的市场情报见 ``product_selection.new_product_planning.entries``。
-        ``summary.m2_suggestions_not_in_erp_skus`` 为企划标题列表（与 ``new_product_planning.items`` 同源）。
-        """
-        suffix = self._competitor_search_suffix(product_selection)
+    def _run_pricing_v2(self, sku_metrics: List[Dict], experiences: List[Dict]) -> Dict:
+        """Tool-based 定价：LLM Agent 通过 function calling 逐 SKU 决策。"""
+        from .agents.pricing_agent_v2 import PricingAgentV2
 
-        m2_catalog_gaps = self._pure_new_m2_catalog_items(product_selection)
-
-        # 计算日销量百分位，用于角色判定
-        all_daily_sales = sorted([int(s.get("daily_sales") or 0) for s in sku_metrics])
-        def _daily_sales_pct(ds: int) -> float:
-            if not all_daily_sales:
-                return 0.5
-            below = sum(1 for x in all_daily_sales if x < ds)
-            return below / len(all_daily_sales)
-
+        agent = PricingAgentV2(self.llm_client, use_llm=True)
         results: List[Dict] = []
-        for sku in sku_metrics:
-            sku_id = str(sku.get("sku_id", "")).strip()
-            sku_name = str(sku.get("name", "")).strip()
+        total_skus = len(sku_metrics)
 
-            # 优先从上传竞品数据中按 sku_id 精确查找
+        for idx, sku in enumerate(sku_metrics):
+            self._emit_progress(f"定价分析 ({idx+1}/{total_skus})", 4, 8)
+            sku_id = str(sku.get("sku_id", "")).strip()
+
+            # 获取竞品数据
             uploaded = self._uploaded_competitor_map.get(sku_id)
-            if uploaded is None and sku_name:
-                uploaded = self._uploaded_competitor_map.get(sku_name)
+            if uploaded is None and sku.get("name"):
+                uploaded = self._uploaded_competitor_map.get(str(sku.get("name", "")))
 
             if uploaded:
-                from .data.taobao_competitor_adapter import TaobaoCompetitorAdapter as TCA
-                competitor_prices = TCA._clean_prices([p.get("price") for p in uploaded])
+                competitor_prices = [float(p.get("price") or 0) for p in uploaded if float(p.get("price") or 0) > 0]
                 competitor_products = uploaded
-                base = sku_id
-            elif self._competitors_source == "taobao":
-                base = sku_name or sku_id
-                competitor_prices, competitor_products = self._fetch_competitor_prices_for_query(base)
             else:
-                base = sku_id or sku_name
-                competitor_prices, competitor_products = self._fetch_competitor_prices_for_query(base)
+                competitor_prices = []
+                competitor_products = []
 
-            cost = float(sku.get("cost_price") or 0)
-            ds = int(sku.get("daily_sales") or 0)
-
-            # 过滤与该 SKU 相关的经验（按品类/颜色/价位带匹配）
-            sku_experiences = self._filter_experiences_for_sku(sku, experiences)
-
-            result = self.dynamic_pricing_agent.analyze(
-                product_info=sku,
-                competitor_prices=competitor_prices,
-                store_cost_price=cost,
-                seasonal_factor=0.8,
-                competitor_products=competitor_products,
-                pricing_mode="executable",
-                daily_sales_percentile=_daily_sales_pct(ds),
-                relevant_experiences=sku_experiences,
-            )
-            result["competitor_search_query"] = base
-            result["competitor_search_used_planning_suffix"] = False
+            try:
+                result = agent.analyze_sku(sku, competitor_prices, competitor_products, experiences)
+            except Exception as e:
+                print(f"[pricing_v2] SKU {sku_id} failed: {e}")
+                result = {
+                    "sku_id": sku_id,
+                    "name": sku.get("name", ""),
+                    "current_price": sku.get("price", 0),
+                    "cost_price": sku.get("cost_price", 0),
+                    "suggested_price": sku.get("price", 0),
+                    "strategy": "hold",
+                    "reasoning": f"Agent 调用失败: {e}",
+                    "action": "hold",
+                    "competitor_summary": {},
+                }
             results.append(result)
 
-        skus_with_data = [
-            r for r in results if r.get("competitor_summary", {}).get("sample_count", 0) > 0
-        ]
+        skus_with_data = [r for r in results if r.get("competitor_summary", {}).get("sample_count", 0) > 0]
         return {
             "pricing_suggestions": results,
             "summary": {
                 "total_skus": len(results),
                 "skus_with_competitor_data": len(skus_with_data),
-                "data_source": "uploaded" if self._uploaded_competitor_map else self._competitors_source,
-                "competitor_search_suffix": suffix or None,
-                "skus_with_planning_suffix": 0,
-                "m2_suggestions_not_in_erp_skus": m2_catalog_gaps,
+                "data_source": "uploaded" if self._uploaded_competitor_map else "mock",
             },
         }
 

@@ -1,51 +1,32 @@
 :root {
-  --surface-bg: #f7f8fc;
+  --surface-bg: #f4efe8;
   --surface-card: #ffffff;
-  --surface-hover: #f1f3f9;
-  --border: #e5e7eb;
-  --border-strong: #d1d5db;
-  --text: #1e293b;
-  --text-muted: #64748b;
-  --text-subtle: #94a3b8;
+  --surface-warm: #faf6f0;
+  --surface-cool: #f4f6fb;
+  --border: #e8e6e1;
+  --border-strong: #d6d3cd;
+  --text: #1c1917;
+  --text-muted: #57534e;
+  --text-subtle: #78716c;
 
-  --primary: #4f46e5;
-  --primary-light: #eef2ff;
-  --primary-hover: #4338ca;
-  --success: #10b981;
-  --success-light: #ecfdf5;
-  --warning: #f59e0b;
-  --warning-light: #fffbeb;
-  --danger: #ef4444;
-  --danger-light: #fef2f2;
-
-  --color-growth: #059669;
-  --color-growth-bg: rgba(5, 150, 105, 0.08);
-  --color-risk: #dc2626;
-  --color-risk-bg: rgba(220, 38, 38, 0.08);
-  --color-urgent: #be123c;
-  --color-urgent-bg: rgba(190, 18, 60, 0.08);
+  --color-growth: #0d9488;
+  --color-growth-bg: rgba(13, 148, 136, 0.08);
+  --color-risk: #ea580c;
+  --color-risk-bg: rgba(234, 88, 12, 0.08);
+  --color-urgent: #dc2626;
+  --color-urgent-bg: rgba(220, 38, 38, 0.08);
   --color-structure: #4f46e5;
   --color-structure-bg: rgba(79, 70, 229, 0.08);
-  --color-actions: rgba(79, 70, 229, 0.1);
+  --color-actions: rgba(13, 148, 136, 0.12);
 
-  --accent-coral: #f97316;
-  --accent-sun: #eab308;
-  --accent-mint: #10b981;
-  --accent-azure: #3b82f6;
-  --accent-violet: #8b5cf6;
-  --accent-deep: #4f46e5;
-  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-  --radius-card: 12px;
-  --radius-control: 8px;
-
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Noto Sans SC', 'Source Han Sans SC', system-ui, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Consolas, monospace;
+  --font-sans: 'Source Han Sans SC', 'Noto Sans SC', 'PingFang SC', system-ui,
+    sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
+  --shadow-soft: 0 18px 45px rgba(28, 37, 46, 0.08);
 
   font-family: var(--font-sans);
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--text);
   background: var(--surface-bg);
   font-synthesis: none;
@@ -61,25 +42,47 @@
 
 body {
   margin: 0;
-  min-height: 100vh;
-  background-color: var(--surface-bg);
+  background:
+    radial-gradient(circle at top left, rgba(255, 188, 116, 0.18), transparent 22%),
+    radial-gradient(circle at 85% 8%, rgba(96, 141, 171, 0.14), transparent 24%),
+    linear-gradient(180deg, #f8f4ed 0%, #f2ece4 46%, #efe7dd 100%);
 }
 
 #root {
-  min-height: 100vh;
+  min-height: 100svh;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 1.25rem 1rem 3rem;
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-weight: 600;
   color: var(--text);
   margin: 0 0 0.5rem;
 }
 
-h1 { font-size: 1.6rem; letter-spacing: -0.02em; }
-h2 { font-size: 1.2rem; color: var(--text); }
-h3 { font-size: 1.05rem; }
+h1 {
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+}
 
-p { margin: 0 0 0.5rem; }
+h2 {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+h3 {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+p {
+  margin: 0 0 0.5rem;
+}
 
 .tabular {
   font-variant-numeric: tabular-nums;
@@ -90,15 +93,7 @@ p { margin: 0 0 0.5rem; }
 code {
   font-family: var(--font-mono);
   font-size: 0.85em;
-  background: var(--primary-light);
-  padding: 0.15em 0.4em;
+  background: var(--surface-warm);
+  padding: 0.1em 0.35em;
   border-radius: 4px;
-  border: 1px solid var(--border);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
 }

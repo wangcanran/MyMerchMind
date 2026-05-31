@@ -49,6 +49,8 @@ export function PriceHistoryModule() {
   const [history, setHistory] = useState<SkuHistory[]>(loadStoredHistory)
   const [message, setMessage] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 15
 
   useEffect(() => { saveHistory(history) }, [history])
 
@@ -66,6 +68,10 @@ export function PriceHistoryModule() {
         } else {
           const parsed = JSON.parse(text)
           data = normalizeJson(parsed)
+          // If the JSON contains full SKU info (stock, daily_sales etc), also save as ERP data
+          if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0].daily_sales === 'number') {
+            sessionStorage.setItem(ERP_STORAGE_KEY, JSON.stringify(parsed))
+          }
         }
         if (data.length === 0) {
           setMessage('未识别到有效数据，请检查格式')
@@ -88,6 +94,10 @@ export function PriceHistoryModule() {
       if (!res.ok) throw new Error('无法加载演示数据')
       const parsed = await res.json()
       const data = normalizeJson(parsed)
+      // Save full SKU data to ERP storage
+      if (Array.isArray(parsed) && parsed.length > 0 && typeof parsed[0].daily_sales === 'number') {
+        sessionStorage.setItem(ERP_STORAGE_KEY, JSON.stringify(parsed))
+      }
       setHistory(data)
       const totalRecords = data.reduce((s, h) => s + h.records.length, 0)
       setMessage(`已加载演示数据：${data.length} 个 SKU，共 ${totalRecords} 条记录`)
@@ -139,6 +149,7 @@ export function PriceHistoryModule() {
       {message && <p className="erp-message">{message}</p>}
 
       {history.length > 0 && (
+        <>
         <div className="erp-table-wrap">
           <table className="erp-table">
             <thead>
@@ -153,7 +164,7 @@ export function PriceHistoryModule() {
               </tr>
             </thead>
             <tbody>
-              {history.map((h) => {
+              {history.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((h) => {
                 const prices = h.records.map((r) => r.price)
                 const sales = h.records.map((r) => r.daily_sales)
                 const dates = h.records.map((r) => r.date).sort()
@@ -172,6 +183,14 @@ export function PriceHistoryModule() {
             </tbody>
           </table>
         </div>
+        {history.length > PAGE_SIZE && (
+          <div className="pagination">
+            <button type="button" className="btn btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>上一页</button>
+            <span className="pagination-info">{currentPage} / {Math.ceil(history.length / PAGE_SIZE)}</span>
+            <button type="button" className="btn btn-sm" disabled={currentPage >= Math.ceil(history.length / PAGE_SIZE)} onClick={() => setCurrentPage((p) => p + 1)}>下一页</button>
+          </div>
+        )}
+        </>
       )}
 
       {expanded && (

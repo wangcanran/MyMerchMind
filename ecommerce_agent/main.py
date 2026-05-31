@@ -263,7 +263,12 @@ def build_markdown_report(report: Dict) -> str:
                 sug = float(r.get("suggested_price") or 0)
                 if not cur or not sug:
                     return 0.0
-                return abs(sug - cur) / cur
+                gap = abs(sug - cur) / cur
+                # Boost priority for overstock SKUs (strategy = clearance/markdown)
+                strategy = str(r.get("strategy") or "").lower()
+                if "clearance" in strategy or "markdown" in strategy or "清仓" in strategy:
+                    gap += 0.3
+                return gap
 
             ranked = sorted(rows, key=_price_gap, reverse=True)
             top_slice = ranked[:top_n_disp]
@@ -291,6 +296,17 @@ def build_markdown_report(report: Dict) -> str:
                 pos_s = f"竞品P{pos:.0f}" if pos is not None else ""
                 meta = " | ".join(x for x in [sweet_s, pos_s, strategy] if x)
                 lines.append(f"  - {label}：{cur_s} → {sug_s}（{meta}）")
+                # 毛利影响测算
+                cost = float(r.get("cost_price") or 0)
+                if cost > 0 and cur and sug:
+                    margin_before = round((cur - cost) / cur * 100, 1)
+                    margin_after = round((sug - cost) / sug * 100, 1)
+                    profit_before = round(cur - cost, 1)
+                    profit_after = round(sug - cost, 1)
+                    lines.append(
+                        f"      毛利影响：调价前 ¥{profit_before}（{margin_before}%）→ 调价后 ¥{profit_after}（{margin_after}%），"
+                        f"单件利润变化 {profit_after - profit_before:+.1f} 元"
+                    )
                 # LLM 定价理由
                 reasoning = str(r.get("reasoning") or "").strip()
                 if reasoning:
@@ -313,6 +329,11 @@ def build_markdown_report(report: Dict) -> str:
                 guardrail_note = str(r.get("guardrail_note") or "").strip()
                 if guardrail_note:
                     lines.append(f"      护栏调整：{guardrail_note}")
+                # 决策链路说明
+                rule_price = r.get("rule_suggested_price")
+                llm_raw = r.get("llm_raw_price")
+                if rule_price and llm_raw and sug:
+                    lines.append(f"      决策链路：规则价 ¥{rule_price} → LLM 建议 ¥{llm_raw} → 护栏约束 → 最终 ¥{sug}")
                 erule = str(r.get("exception_explanation_rule") or "").strip()
                 if erule:
                     if len(erule) > 160:
@@ -383,12 +404,30 @@ def build_markdown_report(report: Dict) -> str:
             lines.append(
                 f"- {name}：日均 {payload.get('daily_units', 0)} 件，占比 {payload.get('share_pct', 0)}%"
             )
+        wow = ch.get('week_over_week_pct')
+        mom = ch.get('month_over_month_pct')
+        wow_str = f"{wow:+.2f}%" if wow is not None else "数据不足"
+        mom_str = f"{mom:+.2f}%" if mom is not None else "数据不足"
         lines.append(
-            f"- 周预估销量：{ch.get('current_week_est_units', 0)}，上周合计：{ch.get('prior_week_total_units', 0)}，周环比约 {ch.get('week_over_week_pct', 0):+.2f}%"
+            f"- 周预估销量：{ch.get('current_week_est_units', 0)}，上周合计：{ch.get('prior_week_total_units', 0)}，周环比：{wow_str}"
         )
         lines.append(
-            f"- 月预估销量：{ch.get('current_month_est_units', 0)}，上月合计：{ch.get('prior_month_total_units', 0)}，月环比约 {ch.get('month_over_month_pct', 0):+.2f}%"
+            f"- 月预估销量：{ch.get('current_month_est_units', 0)}，上月合计：{ch.get('prior_month_total_units', 0)}，月环比：{mom_str}"
         )
+        # 渠道-SKU 拆解
+        breakdown = ch.get("channel_sku_breakdown") or {}
+        if breakdown:
+            lines.append("- **渠道 Top SKU 贡献**：")
+            for ch_name, skus in breakdown.items():
+                if skus:
+                    top_labels = [f"{s['sku_id']}({s['channel_share_pct']}%/覆盖{s['coverage_days']}天)" for s in skus[:2]]
+                    lines.append(f"  - {ch_name}：{', '.join(top_labels)}")
+        # 渠道风险诊断
+        risks = ch.get("channel_risk_diagnosis") or []
+        if risks:
+            lines.append("- **渠道风险诊断**：")
+            for r in risks[:3]:
+                lines.append(f"  - [{r['risk_type']}] {r['diagnosis']}")
     else:
         lines.append("- 暂无渠道数据")
     lines.append("")

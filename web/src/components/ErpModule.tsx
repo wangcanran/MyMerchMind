@@ -32,6 +32,8 @@ export function ErpModule() {
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [showAdd, setShowAdd] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const PAGE_SIZE = 15
 
   useEffect(() => { saveSkus(skus) }, [skus])
   const [newSku, setNewSku] = useState({
@@ -55,7 +57,22 @@ export function ErpModule() {
           data = parseCsv(text)
         } else {
           const parsed = JSON.parse(text)
-          data = Array.isArray(parsed) ? parsed : parsed.skus || parsed.data || []
+          const rawArr = Array.isArray(parsed) ? parsed : parsed.skus || parsed.data || []
+          data = rawArr.map((item: Record<string, unknown>) => ({
+            sku_id: String(item.sku_id || ''),
+            name: String(item.name || ''),
+            price: Number(item.price || item.current_price) || 0,
+            cost_price: Number(item.cost_price) || 0,
+            daily_sales: Number(item.daily_sales) || 0,
+            stock: Number(item.stock) || 0,
+            in_transit: Number(item.in_transit) || 0,
+            return_rate: Number(item.return_rate) || 0,
+            channel_sales: (item.channel_sales as { live: number; private: number; shelf: number }) || { live: 0, private: 0, shelf: 0 },
+            conversion_rate: Number(item.conversion_rate) || 0,
+            stock_age_days: Number(item.stock_age_days) || 0,
+            ...(item.price_history ? { price_history: item.price_history } : {}),
+            ...(item.review_snippets ? { review_snippets: item.review_snippets } : {}),
+          })).filter((s: SkuRecord) => s.sku_id)
         }
         setSkus(data)
         setMessage(`导入成功：${data.length} 条 SKU 数据`)
@@ -186,6 +203,7 @@ export function ErpModule() {
       )}
 
       {skus.length > 0 && (
+        <>
         <div className="erp-table-wrap">
           <table className="erp-table">
             <thead>
@@ -204,7 +222,7 @@ export function ErpModule() {
               </tr>
             </thead>
             <tbody>
-              {skus.map((s) => (
+              {skus.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((s) => (
                 <tr key={s.sku_id}>
                   <td className="tabular">{s.sku_id}</td>
                   <td>{s.name}</td>
@@ -222,6 +240,14 @@ export function ErpModule() {
             </tbody>
           </table>
         </div>
+        {skus.length > PAGE_SIZE && (
+          <div className="pagination">
+            <button type="button" className="btn btn-sm" disabled={currentPage <= 1} onClick={() => setCurrentPage((p) => p - 1)}>上一页</button>
+            <span className="pagination-info">{currentPage} / {Math.ceil(skus.length / PAGE_SIZE)}</span>
+            <button type="button" className="btn btn-sm" disabled={currentPage >= Math.ceil(skus.length / PAGE_SIZE)} onClick={() => setCurrentPage((p) => p + 1)}>下一页</button>
+          </div>
+        )}
+        </>
       )}
 
       {skus.length === 0 && !showAdd && (

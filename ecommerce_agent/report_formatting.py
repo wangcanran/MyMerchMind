@@ -134,6 +134,12 @@ def build_actions_display(actions: List[str], *, as_of_iso: str) -> Dict[str, An
         row = classify_demo_action(str(a), base)
         rows.append(row)
     rows.sort(key=lambda r: (_TIER_ORDER.get(r.get("tier", ""), 99), r.get("action", "")))
+    # 同 tier 的定价建议分散排期（每条间隔 1 天），避免资源瓶颈
+    pricing_count = 0
+    for row in rows:
+        if "定价建议" in row.get("action", ""):
+            pricing_count += 1
+            row["due"] = _due_mmdd(base, 2 + pricing_count)  # 第1条3天后，第2条4天后...
     return {
         "as_of": as_of_iso,
         "note": (
